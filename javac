@@ -1,0 +1,2 @@
+#!/bin/bash
+$FOREST_DIR/forest.scm -g $FOREST_DIR/grammars/java-1.0.peg.scm $* 

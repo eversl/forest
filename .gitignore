@@ -1,0 +1,13 @@
+
+.DS_Store
+.svn
+test/jacks
+test/jython
+
+test/jacksfiles.txt
+
+doc/langspec-1.0.pdf
+
+test/jythonfiles.txt
+
+test/pythonfiles.txt
