@@ -1,3 +1,10 @@
+package test.Operation;
+
+language "generics.java.rules.forest";
+
+language "enum.java.rules.forest";
+language "enum.java.patterns.forest";
+ 
 import java.util.*;
 
 public enum Operation {
@@ -20,14 +27,14 @@ public enum Operation {
 	
     abstract double eval(double x, double y);
 
-    public static void main(String args[]) {
+    /* public static void main(String args[]) {
         double x = Double.parseDouble(args[0]);
         double y = Double.parseDouble(args[1]);
 
         for (Operation op : Operation.values()) {
             System.out.println(x + " " + op + " " + y + " = " + op.eval(x, y));
         }
-    }
+    } */
 }
 // Running this program produces the following output:
 // java Operation 2.0 4.0
@@ -49,13 +56,13 @@ public abstract class Operation extends Enum<Operation> {
         double eval(double x, double y) { return x + y; }
     };
 
-    public static final Operation minus = new Operation("minus", 1, "-") {
+    public static final Operation minus = new Operation("minus", 1+0, "-") {
         double eval(double x, double y) { return x - y; }
     };
-    public static final Operation times = new Operation("times", 2, "*") {
+    public static final Operation times = new Operation("times", 1+1+0, "*") {
         double eval(double x, double y) { return x * y; }
     };
-    public static final Operation divided_by = new Operation("divided_by", 3, "/") {
+    public static final Operation divided_by = new Operation("divided_by", 1+1+1+0, "/") {
         double eval(double x, double y) { return x / y; }
     }; 
 

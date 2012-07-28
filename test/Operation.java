@@ -20,14 +20,14 @@ public enum Operation {
 	
     abstract double eval(double x, double y);
 
-    public static void main(String args[]) {
+/*    public static void main(String args[]) {
         double x = Double.parseDouble(args[0]);
         double y = Double.parseDouble(args[1]);
 
         for (Operation op : Operation.values()) {
             System.out.println(x + " " + op + " " + y + " = " + op.eval(x, y));
         }
-    }
+    } */
 }
 // Running this program produces the following output:
 // java Operation 2.0 4.0

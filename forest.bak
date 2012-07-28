@@ -7,6 +7,8 @@
          (lib "cmdline.ss")
          scheme/match)
 
+(provide main)
+
 ;;;;;;;;;;;;;; helper defines to make the verbose output clearer
 
 (define s-e-cnt 0)
@@ -166,7 +168,7 @@
     (rule-put! 'Newline (mt "/" (mt "+" (mt "Name" "ReturnChar") (mt "Name" "LinefeedChar")) (mt "Name" "ReturnChar") (mt "Name" "LinefeedChar")) lang)
     (rule-put! 'StringChars (mt "/" (mt "+" (mt "!" (mt "Name" "DoubleQuoteChar")) (mt "Name" "AnyChar") (mt "Name" "StringChars")) (mt "Null")) lang)
     (rule-put! 'LineComment (mt "+" (mt "String" ";") (mt "Name" "CommentChars") (mt "Name" "Newline")) lang)
-    (rule-put! 'Start (mt "+" (mt "Name" "WhiteSpace") (mt "Name" "Declarations") (mt "Name" "EndOfFile")) lang)
+    (rule-put! 'start (mt "+" (mt "Name" "WhiteSpace") (mt "Name" "Declarations") (mt "Name" "EndOfFile")) lang)
     (rule-put! 'EndOfFile (mt "!" (mt "Name" "AnyChar")) lang)
     (rule-put! 'NameChars (mt "/" (mt "+" (mt "Name" "NameChar") (mt "Name" "NameChars")) (mt "Null")) lang)
     (rule-put! 'Declaration (mt ">" (mt "Name" "Sexpr")) lang)
@@ -196,10 +198,7 @@
                                          [(list read-lang lang (cons _ fil)) 
                                           (let ([f (any->string fil)])
                                             (when *verbose* (printf "Import ~s, ~a ~a~n" f (language-name read-lang) (language-name lang)))
-                                            (with-handlers 
-                                                ([exn:fail? (lambda (exn)
-                                                              (eprintf (make-errormessage (exn-message exn) (token-file fil) (token-start-pos fil) (token-end-pos fil))))])
-                                              (read-grammar f read-lang)))
+                                            (read-grammar f read-lang))
                                           (mt "Null")]))) lang)
     (pattern-put! "Insert" (list (cons (mt "Insert" (mt "Name" (mt "Var" "name")) (mt "Var" "rule"))  
                                        (match-lambda*
@@ -237,37 +236,32 @@
         [(equal? (term-name trm) "Unexpanded") (car (term-vals trm))]
         [else 
          (let pat-loop ([pats [reverse (pattern-ref (term-name trm) lang)]])
-           (if (null? pats) 
-               (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
-                          (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm)))
-               #;(let ([new-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))])
-                   (if (andmap eq? new-vals (term-vals trm)) trm 
-                       (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
-                                  new-vals)))               
-               (let ([bnd (let match-loop ([bindings null]
-                                           [pattern (car (car pats))]
-                                           [trm trm])
+           (if (not (pair? pats)) (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
+                                             (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm)))
+               (let ([bnd (let loop ([bindings null]
+                                     [pattern (car (car pats))]
+                                     [trm trm])
                             (match pattern 
                               [(term _ _ _ "UnVar" (list v)) (cons (cons v trm) bindings)]
                               [(term _ _ _ "Var" (list v)) (cons (cons v (expand-term trm lang modify-lang)) bindings)]
                               [(term _ _ _ n (list-rest r ... (list (term _ _ _ "UnVarList" (list v)))))
                                (printf "UnVarList ~a :: ~a~n" pattern trm)
                                (if (and (term? trm) (equal? (term-name trm) n) (>= (length (term-vals trm)) (length r)))
-                                   (let ([bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
+                                   (let ([bnd (foldl (lambda (pat val b) (if b (loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
                                      (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
                               [(term _ _ _ n (list-rest r ... (list (term _ _ _ "VarList" (list v)))))
                                (if (and (term? trm) (equal? (term-name trm) n) (>= (length (term-vals trm)) (length r)))
-                                   (let ([bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
+                                   (let ([bnd (foldl (lambda (pat val b) (if b (loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
                                      (if bnd (cons (cons v (map (lambda (trm) (expand-term trm lang modify-lang)) (drop (term-vals trm) (length r)))) bnd) #f)) #f)]
                               [(term _ _ _ n r) (when *verbose* (printf "Matching term ~a with ~a~n" pattern trm))
                                                 (if (and (term? trm) (token-equal? (term-name trm) n) (eq? (length r) (length (term-vals trm))))
-                                                    (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (term-vals trm)) #f)]
+                                                    (foldl (lambda (pat val b) (if b (loop b pat val) #f)) bindings r (term-vals trm)) #f)]
                               [(token _ _ _ c) (when *verbose* (printf "Matching token ~a with ~a~n" pattern trm))
                                                (if (token-equal? pattern trm) bindings #f)]
                               [v (if (eq? v trm) bindings #f)]))])
                  (if bnd (begin (when *verbose* (printi-up "Matched pattern ~a :: ~a~n" (car (car pats)) trm) (printf "~a~n" bnd))
                                 (let ([res 
-                                       (expand-term (let replace-loop ([repl (cdr [car pats])])
+                                       (expand-term (let loop ([repl (cdr [car pats])])
                                                       (match repl 
                                                         [(? procedure? ) (apply repl lang modify-lang bnd)]
                                                         [(term _ _ _ (or "Var" "UnVar") (list v)) 
@@ -277,7 +271,7 @@
                                                                (cdr val)))]
                                                         [(term l1 l2 l3 n r) (term l1 l2 l3 n (foldr (match-lambda** [((term _ _ _ (or "VarList" "UnVarList") (list v)) r) 
                                                                                                                       (append (cdr (assoc v bnd token-equal?)) r)]
-                                                                                                                     [(v r) (cons (replace-loop v) r)]) '() r))]
+                                                                                                                     [(v r) (cons (loop v) r)]) '() r))]
                                                         [v v])) lang modify-lang)])
                                   (when *verbose* (printi-dn "Replaced ~a with ~a~n" trm res))
                                   res)) 
@@ -287,34 +281,16 @@
 
 ; main helper procedures
 
-(define (prepare infile)
-  (let ([lang (make-initialized-language)]
-        [grammar-file (find-grammar-for-ext infile)])
-    (if grammar-file 
-        (when (not (eq? #t grammar-file)) (read-grammar grammar-file lang))
-        (eprintf "No grammar definition found for file ~a~n" infile))
-    lang))
-
-(define *ext-dir* (build-path (current-directory) "ext"))
-(define (find-grammar-for-ext infile)
-  (let* ([ext (bytes->string/latin-1 (filename-extension infile))]
-         [lst (filter (lambda (fil) (equal? ext (last (drop-right (regexp-split #rx"\\." fil) 1)))) 
-                      (directory-list *ext-dir*))])
-    (if (equal? ext "forest") #t 
-                  (match (filter find-grammar-for-ext lst)
-                    [(cons h _) (build-path *ext-dir* h)]
-                    [_ #f]))))
-
 (define *file-cache* (make-hash))
 
 (define (read-grammar infile lang)
   (let ([verbose *verbose*])
     (when *verbose* (printf "reading grammar ~a~n" infile))
     (set! *verbose* #f)
-    (let* ([read-lang (prepare infile)]
+    (let* ([read-lang (make-initialized-language)]
            [results (hash-ref *file-cache* infile '())]
            [res (if (null? results) (parse-file infile read-lang (lambda (terms) (set! results (cons terms results)) (expand-term (car terms) read-lang lang))) 
-                    (for-each (lambda (terms) (expand-term (car terms) read-lang lang)) results))])
+                    (begin (printf "Reading cache for ~a~n" infile) (for-each (lambda (terms) (expand-term (car terms) read-lang lang)) results)))])
       (hash-set! *file-cache* infile (reverse results))
       
       (set! *verbose* verbose)
@@ -328,7 +304,7 @@
   (if (file-exists? infile) infile  
       (let ([p (find (lambda (p) (file-exists? (build-path p infile))) *grammar-paths*)])
         (if p (build-path p infile)
-            (raise-user-error 'search-file "File not found: ~a~n" infile)))))
+            (raise-user-error search-file "File not found: ~a~n" infile)))))
 
 
 (define (make-errormessage message file pos new-pos)
@@ -346,7 +322,7 @@
 
 (define (parse-file infile lang process-term)
   
-  (when *verbose* (printf " parsing ~s ...~n" infile))
+  (when #t #;*verbose* (printf " parsing ~s ...~n" infile))
   (let* ([infile (search-file infile)]
          [len (file-size infile)]
          [str (call-with-input-file infile (lambda (in) (bytes->string/latin-1 (read-bytes len in))))]
@@ -424,15 +400,15 @@
                      (if (member exp path-ls) ; left recursion
                          (begin (when *verbose* (printi "     start of left recursion ~s~n" exp))
                                 (set-memo-left-rec! memo exp)
-                                (let path-loop ([path path-ls])
+                                (let loop ([path path-ls])
                                   (when (not (eq? (car path) exp))
                                     (set-memo-left-rec! (hash-ref (rule-memo (car path)) pos #f) exp) ; TODO: check this line
-                                    (path-loop (cdr path)))))
+                                    (loop (cdr path)))))
                          (when *verbose* (printi "     cached ~s~n" exp)))
                      (values (memo-post memo) (memo-taken memo))))
                (let ([memo (make-memo #f null #f)])
                  (hash-set! (rule-memo exp) pos memo)
-                 (let recurse-loop ()
+                 (let loop ()
                    (let*-values ([(post taken) (parse rule pos (cons exp path-ls))])
                      (if (memo-left-rec memo) ; now we're back down in left recursion
                          (begin (when *verbose* (printi "   --> ~s Left recursion : ~a, ~a~n" exp post taken))
@@ -442,7 +418,7 @@
                                            (set-memo-post! memo post)
                                            (set-memo-taken! memo taken)
                                            (if (eq? (memo-left-rec memo) exp)
-                                               (recurse-loop)
+                                               (loop)
                                                (values post taken)))
                                     ; one recursion too many. return previous values
                                     (begin (when *verbose* (printi "       last time (~a ~a) : ~a~n" post (memo-post memo) (grown-rec? post (memo-post memo))))
@@ -453,16 +429,16 @@
                            (set-memo-taken! memo taken)
                            (values post taken))))))))]
         [(term _ _ _ "String" (list exp)) 
-         (let string-loop ([exp (string->list (any->string exp))] [chls pos])
+         (let loop ([exp (string->list (any->string exp))] [chls pos])
            (if (null? exp) (values chls null) 
                (let-values ([(new-pos taken) (parse (car exp) chls null)])
-                 (if new-pos (string-loop (cdr exp) new-pos) (values #f null)))))]
+                 (if new-pos (loop (cdr exp) new-pos) (values #f null)))))]
         [(term _ _ _ "+" args) ; concatenation
-         (let concat-loop ([args args] [curr-ls pos] [term null])
+         (let loop ([args args] [curr-ls pos] [term null])
            (if (null? args) (values curr-ls (reverse! term))
                (let-values ([(new-pos taken) (parse (car args) curr-ls (if (eq? curr-ls pos) path-ls null))])
                  (if new-pos 
-                     (concat-loop (cdr args) new-pos (append-reverse taken term))
+                     (loop (cdr args) new-pos (append-reverse taken term))
                      (values #f null)))))]
         [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
          (let* ([char-hash (hash-ref (language-choices lang) exp (lambda () (let ([new-hash (make-hasheq )])
@@ -474,17 +450,16 @@
                                              (hash-set! char-hash ch new-args)
                                              new-args)))])
            
-           (let choice-loop ([args args])
+           (let loop ([args args])
              (if (null? args) (values #f null)
                  (let-values ([(new-pos taken) (parse (car args) pos path-ls)])
-                   (if new-pos (values new-pos taken) 
-                       #;(if (equal? (term-name exp) "/") (values new-pos taken)
-                             (let ([success-args (filter (lambda (arg) (let-values ([(new-pos taken) (parse arg pos path-ls)])
-                                                                         new-pos)) (cdr args))])
-                               (unless (null? success-args)
-                                 (raise-user-error 'parse "parallel choice matches more than one alternative: \"~a\"~n" 
-                                                   (apply string-append (map (lambda (a) (format "~n    ~a" a)) (cons (car args) success-args)))))
-                               (values new-pos taken))) (choice-loop (cdr args)))))))]
+                   (if new-pos (if (equal? (term-name exp) "/") (values new-pos taken)
+                                   (let ([success-args (filter (lambda (arg) (let-values ([(new-pos taken) (parse arg pos path-ls)])
+                                                                               new-pos)) (cdr args))])
+                                     (unless (null? success-args)
+                                       (raise-user-error 'parse "parallel choice matches more than one alternative: \"~a\"~n" 
+                                                         (apply string-append (map (lambda (a) (format "~n    ~a" a)) (cons (car args) success-args)))))
+                                     (values new-pos taken))) (loop (cdr args)))))))]
         [(term _ _ _ "!" (list arg)) ; not
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (values (if new-pos #f pos) null))]
@@ -509,20 +484,26 @@
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (unless new-pos (eprintf (make-errormessage (string-append* (map (match-lambda [(term _ _ _ "String" (list exp)) (any->string exp)]) mess)) infile pos new-pos)))
            (values new-pos taken))]
+        [(term _ _ _ "^" (list arg)) ; take indentation whitespace
+         (let-values ([(new-pos taken) (parse arg pos path-ls)])
+           (when new-pos (take-indent new-pos (substring str pos new-pos)))
+           (values new-pos null))]
+        [(term _ _ _ "^=" (list arg)) ; match indentation token
+         (values (if (match-indent pos arg) pos #f) null)]
         
         [_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
     (with-handlers ([exn:fail:filesystem? 
                      (lambda (exn)
-                       (fprintf (current-error-port) "~a~n" (exn-message exn)) #f)]
+                       (fprintf (current-error-port) "could not open ~s~n" infile) #f)]
                     [exn:fail:user? 
                      (lambda (exn)
                        (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)]
                     #;[exn:fail? 
-                       (lambda (exn)
-                         (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
+                     (lambda (exn)
+                       (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
       (let*-values ([(current-dir) (current-directory)]
                     [(_) (current-directory (path-only (simple-form-path infile)))]
-                    [(res taken) (parse (mt "Name" "Start") 0 null)]
+                    [(res taken) (parse (mt "Name" "start") 0 null)]
                     [(_) (current-directory current-dir)])
         (unless (and (number? res) (= res len))
           (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))
@@ -545,23 +526,84 @@
 (define *print-init* #f)
 (define (print-init-mode v) (set! *print-init* v))
 
-(define (main argv)  
-  (let ([infiles (command-line "forest" argv
-                               (once-each
-                                [("-v" "--verbose") "Print verbose messages"
-                                                    (verbose-mode #t)]
-                                [("-i" "--initial") "Print initial language"
-                                                    (print-init-mode #t)])                               
-                               (args filenames ; expects names of files to as last command-line arguments
-                                     filenames)) ; return list of filenames to compile
-                 ])
-    (exit (if (andmap (lambda (infile)
-                        (let ([lang (prepare infile)]
-                              [modify-lang (make-initialized-language)])
-                          (parse-file infile lang (lambda (terms) (printf "> ~a~n" (expand-term (car terms) lang modify-lang))))))
-                      infiles) 0 1))))
+(define (main argv)
+  (let ([lang (make-initialized-language)]
+        [modify-lang (make-initialized-language)])
+    (define (top-level terms)  
+      (printf "> ~a~n" (expand-term (car terms) lang modify-lang)))
+    
+    ;(getenv "FOREST_DIR") (current-directory)
+    ;(printf "arguments: ~s~n"  argv)
+    (let ([infiles (command-line "forest" argv
+                                 (once-each
+                                  [("-g" "--grammar") filename "Specify grammar file to use"
+                                                      (read-grammar filename lang)]
+                                  [("-v" "--verbose") "Print verbose messages"
+                                                      (verbose-mode #t)]
+                                  [("-i" "--initial") "Print initial language"
+                                                      (print-init-mode #t)])
+                                 #;(once-any
+                                    [("-o" "--optimize-1") "Compile with optimization level 1"
+                                                           (optimize-level 1)]
+                                    ["--optimize-2"        "" ; show help on separate lines
+                                                           "Compile with optimization level 2,"
+                                                           "which implies all optimizations of level 1"
+                                                           (optimize-level 2)])
+                                 #;(multi
+                                    [("-l" "--link-flags") lf ; flag takes one argument
+                                                           "Add a flag for the linker"
+                                                           (link-flags (cons lf (link-flags)))])
+                                 (args filenames ; expects names of files to as last command-line arguments
+                                       filenames)) ; return list of filenames to compile
+                   ])
+      (exit (if (andmap (lambda (infile)
+                          (if (char=? (string-ref infile 0) #\@)
+                              (let ([in (open-input-file (substring infile 1))])
+                                (let loop ([infile (read-line in 'any)])
+                                  (when (not (eof-object? infile))
+                                    (unless (char=? (string-ref infile 0) #\#) 
+                                      (parse-file infile lang top-level))
+                                    (loop (read-line in 'any)))))
+                              (parse-file infile lang top-level)))
+                        infiles) 0 1)))))
+
+;;;;;;;;;;;;;;;;;;; the rest is macros that should be part of the grammar definition.
+
+;;; indentation matching
+(define *indent-ls* null) 
+(define (take-indent chls ws)
+  (when *verbose* (printf "^ ~s~n" ws))
+  (set! *indent-ls* (cons (list chls ws #f) *indent-ls*)))
+
+
+(define (match-indent chls token)
+  (when *verbose*
+    (printf "^= ~s ~s: ~s " token (list->string (take chls (min (length chls) 6))) 
+            (map (lambda (el) (list (list->string (take chls (min (length chls) 6))) (cadr el))) *indent-ls*)))
+  (case token 
+    [(SAME)
+     (if (eq? chls (caar *indent-ls*))
+         (cond [(third (first *indent-ls*)) #t]
+               [(string=? (cadar *indent-ls*) (cadadr *indent-ls*))
+                (set! *indent-ls* 
+                      (cons (list (caar *indent-ls*) (cadar *indent-ls*) #t) (cddr *indent-ls*))) #t]
+               [else #f]) #f)]
+    [(INDENT)
+     (and (eq? chls (caar *indent-ls*)) (string-prefix? (cadadr *indent-ls*) (cadar *indent-ls*)))]
+    [(DEDENT) 
+     (begin0 
+       (and (eq? chls (caar *indent-ls*)) (string-prefix? (cadar *indent-ls*) (cadadr *indent-ls*)))
+       (set! *indent-ls* (cons (car *indent-ls*) (cddr *indent-ls*)))
+       )]))
 
 ; interactive script
 (if (= (vector-length (current-command-line-arguments)) 0)
-    (main #("-g" "grammars/java-1.0.peg.scm" "test/enum_example.java"))
+    (main #("-g" "java-2.0.peg.scm" "@jythonfiles.txt"))
     (main (current-command-line-arguments)))
+#;(profile-thunk (lambda ()
+                   ))
+
+
+
+
+

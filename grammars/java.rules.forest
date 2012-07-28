@@ -55,8 +55,3 @@
 ;(Pattern (kw 'c) (+ (choice-append! Keyword (+ 'c (! LetterOrDigit))) WhiteSpace))
 (Insert Sexpr (@ "kw" (parens (+ (sym "kw") Sexpr))))
 
-; Syntax for transformation patterns 
-             
-(Insert Sexpr (@ "TermPattern" (parens (+ (sym "TermPattern") Sexpr Sexpr))))
-(Insert Sexpr (@ "Term" (+ (tok "[") Name (? (+ (tok ":") Sexprs)) (tok "]"))))
-(Insert Sexpr (@ "Token" (tok (+ "#" DoubleQuoteChar (< StringChars) DoubleQuoteChar))))

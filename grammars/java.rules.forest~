@@ -1,6 +1,6 @@
 ; Definitions for syntax extensions needed to read the patterns 
-(Import "forest.patterns.scm")
-(Import "forest.rules.scm")
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
 
 ;(Pattern (oper 'c) (+ 'c WhiteSpace))
 (Insert Sexpr (@ "oper" (+ (parens (+ (sym "oper") Sexpr)))))
@@ -35,6 +35,9 @@
 ;(Pattern (chevrons$ 'c) (/ (+ (tok "<") 'c (tok ">")) ($ "could not find closing '>'" (tok "<"))))
 (Insert Sexpr (@ "chevrons$" (parens (+ (sym "chevrons$") Sexpr))))
 
+;(SyntaxPattern (body-braces$ 'c) (@ "body" (+ (tok "{") ($ (+ 'c (tok "}")) "could not find closing '}'"))))
+(Insert Sexpr (@ "body-braces$" (parens (+ (sym "body-braces$") Sexpr))))
+
 ;(Pattern ($$ 'a1 'a2) (/ (+ 'a1 'a2) (+ (& 'a1) ($ 'a1 'a1 "expression not completed"))))
 (Insert Sexpr (@ "$$" (parens (+ (sym "$$") Sexpr Sexpr))))
 
@@ -52,3 +55,8 @@
 ;(Pattern (kw 'c) (+ (choice-append! Keyword (+ 'c (! LetterOrDigit))) WhiteSpace))
 (Insert Sexpr (@ "kw" (parens (+ (sym "kw") Sexpr))))
 
+; Syntax for transformation patterns 
+             
+(Insert Sexpr (@ "TermPattern" (parens (+ (sym "TermPattern") Sexpr Sexpr))))
+(Insert Sexpr (@ "Term" (+ (tok "[") Name (? (+ (tok ":") Sexprs)) (tok "]"))))
+(Insert Sexpr (@ "Token" (tok (+ "#" DoubleQuoteChar (< StringChars) DoubleQuoteChar))))

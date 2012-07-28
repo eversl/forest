@@ -10,3 +10,8 @@
 (Insert Sexpr (@ "?" (+ "(" WhiteSpace "?" WhiteSpace Sexpr ")" WhiteSpace)))
 (Insert Sexpr (@ "&" (+ "(" WhiteSpace "&" WhiteSpace Sexpr ")" WhiteSpace)))
 
+; Syntax for term patterns 
+             
+(Insert Sexpr (@ "TermPattern" (+ "(" WhiteSpace "TermPattern" (! NameChar) WhiteSpace Sexpr Sexpr ")" WhiteSpace)))
+(Insert Sexpr (@ "Term" (+ "[" WhiteSpace Name (/ (+ ":" WhiteSpace Sexprs) ()) "]" WhiteSpace)))
+(Insert Sexpr (@ "Token" (+ "#" WhiteSpace DoubleQuoteChar (< StringChars) DoubleQuoteChar WhiteSpace)))
