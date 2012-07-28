@@ -16,7 +16,7 @@
 (Rule Name (// (@ "Var" (+ (tok "'") NameLiteral)) 
                (@ "VarList" (+ (tok "'''") NameLiteral))
                (@ "Name" NameLiteral)))
-(Rule NameChar (/ LetterChar DigitChar "$" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
+(Rule NameChar (/ LetterChar DigitChar "$" "+" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
 (Rule NameChars (/ (+ NameChar NameChars) ()))
 (Rule NameLiteral (tok (< (+ NameChar NameChars))))
 
@@ -40,7 +40,7 @@
              Name
              (@ "String" StringLiteral)
              (@ "Unexpanded" (parens (+ (sym "Unexpanded") Sexpr)))
-             (@ "SyntaxPattern" (parens (+ (sym "SyntaxPattern") Sexpr Sexpr)))
+             (@ "Pattern" (parens (+ (sym "Pattern") Sexpr Sexpr)))
              (@ "Rule" (parens (+ (sym "Rule") Name Sexpr)))
              (@ "Insert" (parens (+ (sym "Insert") Name Sexpr)))
              (@ "NewName" (parens (+ (sym "NewName"))))

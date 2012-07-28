@@ -1,10 +1,10 @@
-(Import "forest.patterns.scm")
-(Import "forest.rules.scm")
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; start parsing here
-(Rule start (+ WhiteSpace Declarations EndOfFile))
+(Rule Start (+ WhiteSpace Declarations EndOfFile))
 
 (Rule EndOfFile (! AnyChar))
 

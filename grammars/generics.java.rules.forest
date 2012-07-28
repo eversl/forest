@@ -1,0 +1,59 @@
+
+;;;;;;;;;;;;; Modifications to the java language to implement Generics
+
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
+
+(Import "java.patterns.forest")
+(Import "java.rules.forest")
+
+
+;(Rule ClassDeclaration (@.$: Modifiers "class" Identifier 
+;                                 (? (@$: "extends" Type))
+;                                 (? (@$: "implements" (list Type)))
+;                                 ClassBody))
+(Rule ClassDeclaration (@.$: Modifiers "class" (+ Identifier (? TypeParameters)) 
+                                 (? (@$: "extends" Type))
+                                 (? (@$: "implements" (list Type)))
+                                 ClassBody))
+
+
+; (Rule CreatedName (seq (+ Identifier ) dot))
+(Rule CreatedName (seq (+ Identifier (? (@ "type-args" (chevrons (list TypeArgument))))) dot))
+
+
+;(Rule IdentifierSuffix (/ (brackets Expression)
+;                              Arguments
+;                              (+ (* Dim) dot (kw "class")) 
+;                              (+ dot (/ (kw "this") 
+;                                        (+ (kw "super") Arguments) 
+;                                        InnerCreator))))
+(Rule IdentifierSuffix (/ (brackets Expression)
+                              Arguments
+                              (+ (* Dim) dot (kw "class")) 
+                              (+ dot (/ ExplicitGenericInvocation 
+                                        (kw "this") 
+                                        (+ (kw "super") Arguments) 
+                                        InnerCreator))))
+
+
+(Insert Primary (@ "generic" (+ NonWildcardTypeArguments (/ ExplicitGenericInvocationSuffix (@$: "this" Arguments)))))
+
+(Insert ClassBodyDeclaration (@ "generic-method" (+ Modifiers TypeParameters MethodDeclarator)))
+(Insert ClassBodyDeclaration (@ "generic-constructor" (+ Modifiers TypeParameters ConstructorDeclarator)))
+
+(Insert Selector ExplicitGenericInvocation)
+
+(Rule TypeParameters (@ "type-param" (chevrons$ (list (+ Identifier (? (+ (kw "extends") (seq Type (tok "&")))))))))
+
+(Rule NonWildcardTypeArguments (@ "type-args" (chevrons (list Type))))
+
+(Rule ExplicitGenericInvocation (+ NonWildcardTypeArguments ExplicitGenericInvocationSuffix))
+
+(Rule ExplicitGenericInvocationSuffix (/ SuperInvocation
+                                             (+ Identifier Arguments)))
+
+(Rule TypeArgument (/ (@ "any" (+ (tok "?") (? (/ (@$: "extends" Type) (@$: "super" Type)))))
+                          Type))
+
+

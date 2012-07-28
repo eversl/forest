@@ -1,0 +1,68 @@
+
+;;;;;;;;;;;;;; Enum Declaration
+;; see http://jcp.org/aboutJava/communityprocess/jsr/tiger/enum.html
+
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
+
+(TermPattern [enum : [modifiers : '''modifiers] 'enum-name [body : '''body]] 
+             [enum-xf : [modifiers : '''modifiers [abstract]] 'enum-name [values] [integer : #"0"]
+                      [classbody :                       
+                                 [method : [modifiers : [public] [static]] [type : 'enum-name [dim]] #"values" [formal-params] [block : [return : [cast : [type : 'enum-name [dim]] #"$VALUES" #"clone" [arguments]]]]]
+                                 [method : [modifiers : [public] [static]] [type : 'enum-name] #"valueOf" [formal-params : [param : [type : #"String"] [name : #"name"]]] [block : [return : [cast : [type : 'enum-name] #"java" #"lang" #"Enum" #"valueOf" [arguments : 'enum-name #"name"]]]]]]
+                      [enumbody : '''body]])
+
+(TermPattern [enum-xf : 'modifiers 'enum-name [values : '''values] 'num [classbody : '''clsbody] 
+                      [enumbody : [constant : 'const-name [arguments : '''const-args] 'const-body] '''enumbody]]
+             [enum-xf : 'modifiers 'enum-name [values : '''values 'const-name] [add-expr : [integer : #"1"] 'num]
+                      [classbody : '''clsbody 
+                                 [field : [modifiers : [public] [static] [final]] [type : 'enum-name] 
+                                        [var-declarator : 'const-name [var-init : [new : 'enum-name [arguments : [string : 'const-name] 'num '''const-args] 'const-body]]]]] 
+                      [enumbody : '''enumbody]])
+(TermPattern [enum-xf : 'modifiers 'enum-name 'values 'num [classbody : '''clsbody] 
+                      [enumbody : 
+                                [constructor : 'constr-modifiers 'enum-name [formal-params : '''constr-params] [block : '''constr-stmts]]
+                                '''enumbody]]
+             [enum-xf : 'modifiers 'enum-name 'values 'num
+                      [classbody : '''clsbody [constructor : 'constr-modifiers 'enum-name [formal-params : [param : [type : #"String"] [name : #"name"]]
+                                                                                                         [param : [type : [int]] [name : #"ordinal"]] '''constr-params]
+                                                           [block : [statement-expr : [super : [arguments : #"name" #"ordinal"]]] '''constr-stmts]]] 
+                      [enumbody : '''enumbody]])
+(TermPattern [enum-xf : 'modifiers 'enum-name 'values 'num [classbody : '''clsbody] [enumbody : 'other-element '''enumbody]]
+             [enum-xf : 'modifiers 'enum-name 'values 'num [classbody : '''clsbody 'other-element] [enumbody : '''enumbody]])
+(TermPattern [enum-xf : 'modifiers 'enum-name [values : '''values] 'num [classbody : '''clsbody] [enumbody]]
+             [class : 'modifiers 'enum-name [extends : [type : #"Enum" [type-args : [type : 'enum-name]]]]
+               [body : '''clsbody [field : [modifiers : [private] [static] [final]] [type : 'enum-name [dim]] [var-declarator : #"$VALUES" [var-init : [array-init : '''values]]]]]])
+
+(TermPattern  [enum : [modifiers : [public]] 'enum-name 
+                    [body : 
+                          [constant : 'plus-name [arguments : '''plus-args] 'plus-body]
+                          [constant : 'minus-name [arguments : '''minus-args] 'minus-body]
+                          [constant : 'times-name [arguments : '''times-args] 'times-body]
+                          [constant : 'divide-name [arguments : '''divide-args] 'divide-body]
+                          'opStr-field
+                          [constructor : [modifiers] 'enum-name [formal-params : '''constr-params] [block : '''constr-stmts]]
+                          'eval-method]]
+              
+              [class : [modifiers : [public] [abstract]] 'enum-name [extends : [type : #"Enum" [type-args : [type : 'enum-name]]]]
+                [body : 
+                      'eval-method
+                      [field : [modifiers : [public] [static] [final]] [type : 'enum-name] 
+                             [var-declarator : 'plus-name [var-init : [new : 'enum-name [arguments : [string : 'plus-name] [integer : #"0"] '''plus-args] 'plus-body]]]]
+                      [field : [modifiers : [public] [static] [final]] [type : 'enum-name]
+                             [var-declarator : 'minus-name [var-init : [new : 'enum-name [arguments : [string : 'minus-name] [integer : #"1"] '''minus-args] 'minus-body]]]]
+                      [field : [modifiers : [public] [static] [final]] [type : 'enum-name]
+                             [var-declarator : 'times-name [var-init : [new : 'enum-name [arguments : [string : 'times-name] [integer : #"2"] '''times-args] 'times-body]]]]
+                      [field : [modifiers : [public] [static] [final]] [type : 'enum-name]
+                             [var-declarator : 'divide-name [var-init : [new : 'enum-name [arguments : [string : 'divide-name] [integer : #"3"] '''divide-args] 'divide-body]]]]
+                      [field : [modifiers : [private] [static] [final]] [type : 'enum-name [dim]] [var-declarator : #"$VALUES" [var-init : [array-init : 'plus-name 'minus-name 'times-name 'divide-name]]]]
+                      [method : [modifiers : [public] [static]] [type : 'enum-name [dim]] #"values" [formal-params] [block : [return : [cast : [type : 'enum-name [dim]] #"$VALUES" #"clone" [arguments]]]]]
+                      [method : [modifiers : [public] [static]] [type : 'enum-name] #"valueOf" [formal-params : [param : [type : #"String"] [name : #"name"]]] [block : [return : [cast : [type : 'enum-name] #"java" #"lang" #"Enum" #"valueOf" [arguments : 'enum-name #"name"]]]]]
+                      'opStr-field
+                      [constructor : [modifiers : [protected]] 'enum-name [formal-params : [param : [type : #"String"] [name : #"name"]]
+                                                                                         [param : [type : [int]] [name : #"ordinal"]]
+                                                                                         '''constr-params]
+                                   [block : [statement-expr : [super : [arguments : #"name" #"ordinal"]]] '''constr-stmts]]]])
+
+
+

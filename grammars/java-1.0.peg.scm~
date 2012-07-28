@@ -34,7 +34,7 @@
                              (? (@$: "implements" (list Type)))
                              ClassBody))
 
-(Rule ClassBody (body-braces$ (* ClassBodyDeclaration)))
+(Rule ClassBody (@ "classbody" (braces$ (* ClassBodyDeclaration))))
 
 (Rule ClassBodyDeclaration (// (@ "initializer" (+ (? (@: "static")) Block))
                                (@ "method" (+ Modifiers MethodDeclarator))
@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;; Interface Declaration
 
-(Rule InterfaceDeclaration (@.$: Modifiers "interface" Identifier (? (@$: "extends" (list Type))) (body-braces$ (* InterfaceBodyDeclaration))))
+(Rule InterfaceDeclaration (@.$: Modifiers "interface" Identifier (? (@$: "extends" (list Type))) (braces$ (* InterfaceBodyDeclaration))))
 
 (Rule InterfaceBodyDeclaration (// (@ "constant" (+ Modifiers Type (list ConstantDeclarator) semicolon$))
                                    (@ "method" (+ Modifiers InterfaceMethodDeclarator))
@@ -78,16 +78,18 @@
 
 ;;;;;;;;;;;;;; Formal Parameter
 
-(Rule FormalParameters (@ "formal-params" (parens$ (? (/ (+ (list FormalParameter) (? (+ comma VarArityParameter)))
-                                                         VarArityParameter)))))
+(Rule FormalParameters (@ "formal-param" (parens$ (? FormalParameterDecls))))
 
-(Rule FormalParameter (@ "param" (+ VariableModifiers Type VariableDeclaratorId)))
+(Rule FormalParameter (+ VariableModifiers Type VariableDeclaratorId))
 
-(Rule VarArityParameter (@ "var-param" (+ VariableModifiers Type (tok "...") VariableDeclaratorId)))
+(Rule FormalParameterDecls (+ VariableModifiers Type FormalParameterDeclsRest))
+
+(Rule FormalParameterDeclsRest (/ (+ VariableDeclaratorId (? (+ comma FormalParameterDecls)))
+                                  (+ (tok "...") VariableDeclaratorId)))
 
 (Rule VariableModifiers (* (@: "final")))
 
-(Rule VariableDeclaratorId (@ "name" (+ Identifier (* Dim))))
+(Rule VariableDeclaratorId (+ Identifier (* Dim)))
 
 
 ;;;;;;;;;;;;;; Statements
