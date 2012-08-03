@@ -11,3 +11,11 @@ doc/langspec-1.0.pdf
 test/jythonfiles.txt
 
 test/pythonfiles.txt
+
+out.txt
+
+*.scm~
+
+*.forest~
+
+out2.txt

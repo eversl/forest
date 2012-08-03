@@ -1,0 +1,28 @@
+
+; Syntax definition for java lang spec 1.0
+
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
+
+(Import "java.patterns.forest")
+(Import "java.rules.forest")
+
+; start parsing here
+(Rule Start (+ GrammarDefinition EndOfFile))
+
+(Rule GrammarDefinition (* Rule))
+
+(Rule WhiteSpace (// (+ (! Newline) WhitespaceChar WhiteSpace) ()))
+
+(Rule LetterOrDigit (// LetterChar DigitChar "_" "$"))
+
+(Rule Character (+ (! ReturnChar) (! LinefeedChar) AsciiChar))
+
+(Rule Literal (@ "string" (tok (+ DoubleQuoteChar (< (* (+ (! DoubleQuoteChar) Character))) DoubleQuoteChar))))
+
+(Rule Identifier (tok (< (+ (/ LetterChar "_" "$") (* LetterOrDigit)))))
+
+(Rule Rule (+ Identifier (tok ":") Newline (tok (+ (! Newline) WhitespaceChar)) Term (* Term) (tok Newline)))
+
+(Rule Term (+ (// Literal Identifier) (? (tok "?"))))
+

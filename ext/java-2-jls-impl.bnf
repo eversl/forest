@@ -1,0 +1,364 @@
+Arguments:
+        "(" (Expression ("," Expression)*)? ")"
+ArrayCreatorRest:
+        "[" (("]" BracketsOpt ArrayInitializer) | (Expression "]" ("[" Expression "]")* BracketsOpt))
+ArrayInitializer:
+        "{" (VariableInitializer ("," VariableInitializer)* ","?)? "}"
+AssignmentOperator:
+        "-="
+AssignmentOperator:
+        "*="
+AssignmentOperator:
+        "/="
+AssignmentOperator:
+        "&="
+AssignmentOperator:
+        "%="
+AssignmentOperator:
+        "^="
+AssignmentOperator:
+        "+="
+AssignmentOperator:
+        "<<="
+AssignmentOperator:
+        "="
+AssignmentOperator:
+        ">>="
+AssignmentOperator:
+        ">>>="
+AssignmentOperator:
+        "|="
+BasicType:
+        "boolean"
+BasicType:
+        "byte"
+BasicType:
+        "char"
+BasicType:
+        "double"
+BasicType:
+        "float"
+BasicType:
+        "int"
+BasicType:
+        "long"
+BasicType:
+        "short"
+Block:
+        "{" BlockStatements "}"
+BlockStatement:
+        (Identifier ":")? Statement
+BlockStatement:
+        ClassOrInterfaceDeclaration
+BlockStatement:
+        LocalVariableDeclarationStatement
+BlockStatements:
+        BlockStatement*
+BracketsOpt:
+        ("[" "]")*
+CatchClause:
+        "catch" "(" FormalParameter ")" Block
+Catches:
+        CatchClause CatchClause*
+ClassBody:
+        "{" ClassBodyDeclaration* "}"
+ClassBodyDeclaration:
+        ";"
+ClassBodyDeclaration:
+        "static"? Block
+ClassBodyDeclaration:
+        ModifiersOpt MemberDecl
+ClassCreatorRest:
+        Arguments ClassBody?
+ClassDeclaration:
+        "class" Identifier ("extends" Type)? ("implements" TypeList)? ClassBody
+ClassOrInterfaceDeclaration:
+        ModifiersOpt (ClassDeclaration | InterfaceDeclaration)
+CompilationUnit:
+        ("package" QualifiedIdentifier ";")? ImportDeclaration* TypeDeclaration*
+ConstantDeclarator:
+        Identifier ConstantDeclaratorRest
+ConstantDeclaratorRest:
+        BracketsOpt "=" VariableInitializer
+ConstantDeclaratorsRest:
+        ConstantDeclaratorRest ("," ConstantDeclarator)*
+ConstantExpression:
+        Expression
+ConstructorDeclaratorRest:
+        FormalParameters ("throws" QualifiedIdentifierList)? MethodBody
+Creator:
+        QualifiedIdentifier (ArrayCreatorRest | ClassCreatorRest)
+Expression:
+        Expression1 (AssignmentOperator Expression1)?
+Expression1:
+        Expression2 Expression1Rest?
+Expression1Rest:
+        ("?" Expression ":" Expression1)?
+Expression2:
+        Expression3 Expression2Rest?
+Expression2Rest:
+        "instanceof" Type
+Expression2Rest:
+        (Infixop Expression3)*
+Expression3:
+        "(" (Expression | Type) ")" Expression3
+Expression3:
+        PrefixOp Expression3
+Expression3:
+        Primary Selector* PostfixOp*
+ExpressionStatement:
+        StatementExpression ";"
+ForInit:
+        "final"? Type VariableDeclarators
+ForInit:
+        StatementExpression MoreStatementExpressions
+FormalParameter:
+        "final"? Type VariableDeclaratorId
+FormalParameters:
+        "(" (FormalParameter ("," FormalParameter)*)? ")"
+ForUpdate:
+        StatementExpression MoreStatementExpressions
+IdentifierSuffix:
+        "." ("class" | "this" | ("super" Arguments) | ("new" InnerCreator))
+IdentifierSuffix:
+        "[" (("]" BracketsOpt "." "class") | (Expression "]"))
+IdentifierSuffix:
+        Arguments
+ImportDeclaration:
+        "import" Identifier ("." Identifier)* ("." "*")? ";"
+Infixop:
+        "-"
+Infixop:
+        "!="
+Infixop:
+        "*"
+Infixop:
+        "/"
+Infixop:
+        "&"
+Infixop:
+        "&&"
+Infixop:
+        "%"
+Infixop:
+        "^"
+Infixop:
+        "+"
+Infixop:
+        "<"
+Infixop:
+        "<<"
+Infixop:
+        "<="
+Infixop:
+        "=="
+Infixop:
+        ">"
+Infixop:
+        ">="
+Infixop:
+        ">>"
+Infixop:
+        ">>>"
+Infixop:
+        "|"
+Infixop:
+        "||"
+InnerCreator:
+        Identifier ClassCreatorRest
+InterfaceBody:
+        "{" InterfaceBodyDeclaration* "}"
+InterfaceBodyDeclaration:
+        ";"
+InterfaceBodyDeclaration:
+        ModifiersOpt InterfaceMemberDecl
+InterfaceDeclaration:
+        "interface" Identifier ("extends" TypeList)? InterfaceBody
+InterfaceMemberDecl:
+        "void" Identifier VoidInterfaceMethodDeclaratorRest
+InterfaceMemberDecl:
+        ClassOrInterfaceDeclaration
+InterfaceMemberDecl:
+        InterfaceMethodOrFieldDecl
+InterfaceMethodDeclaratorRest:
+        FormalParameters BracketsOpt ("throws" QualifiedIdentifierList)? ";"
+InterfaceMethodOrFieldDecl:
+        Type Identifier InterfaceMethodOrFieldRest
+InterfaceMethodOrFieldRest:
+        ConstantDeclaratorsRest ";"
+InterfaceMethodOrFieldRest:
+        InterfaceMethodDeclaratorRest
+Literal:
+        BooleanLiteral
+Literal:
+        CharacterLiteral
+Literal:
+        FloatingPointLiteral
+Literal:
+        IntegerLiteral
+Literal:
+        NullLiteral
+Literal:
+        StringLiteral
+LocalVariableDeclarationStatement:
+        "final"? Type VariableDeclarators ";"
+MemberDecl:
+        "void" Identifier MethodDeclaratorRest
+MemberDecl:
+        ClassOrInterfaceDeclaration
+MemberDecl:
+        Identifier ConstructorDeclaratorRest
+MemberDecl:
+        MethodOrFieldDecl
+MethodBody:
+        Block
+MethodDeclaratorRest:
+        FormalParameters BracketsOpt ("throws" QualifiedIdentifierList)? (MethodBody | ";")
+MethodOrFieldDecl:
+        Type Identifier MethodOrFieldRest
+MethodOrFieldRest:
+        MethodDeclaratorRest
+MethodOrFieldRest:
+        VariableDeclaratorRest
+Modifier:
+        "abstract"
+Modifier:
+        "final"
+Modifier:
+        "native"
+Modifier:
+        "private"
+Modifier:
+        "protected"
+Modifier:
+        "public"
+Modifier:
+        "static"
+Modifier:
+        "strictfp"
+Modifier:
+        "synchronized"
+Modifier:
+        "transient"
+Modifier:
+        "volatile"
+ModifiersOpt:
+        Modifier*
+MoreStatementExpressions:
+        ("," StatementExpression)*
+ParExpression:
+        "(" Expression ")"
+PostfixOp:
+        "--"
+PostfixOp:
+        "++"
+PrefixOp:
+        "--"
+PrefixOp:
+        "-"
+PrefixOp:
+        "!"
+PrefixOp:
+        "+"
+PrefixOp:
+        "++"
+PrefixOp:
+        "~"
+Primary:
+        "(" Expression ")"
+Primary:
+        "new" Creator
+Primary:
+        "super" SuperSuffix
+Primary:
+        "this" Arguments?
+Primary:
+        "void" "." "class"
+Primary:
+        BasicType BracketsOpt "." "class"
+Primary:
+        Identifier ("." Identifier)* IdentifierSuffix?
+Primary:
+        Literal
+QualifiedIdentifier:
+        Identifier ("." Identifier)*
+QualifiedIdentifierList:
+        QualifiedIdentifier ("," QualifiedIdentifier)*
+Selector:
+        "." "new" InnerCreator
+Selector:
+        "." "super" SuperSuffix
+Selector:
+        "." "this"
+Selector:
+        "." Identifier Arguments?
+Selector:
+        "[" Expression "]"
+Statement:
+        ";"
+Statement:
+        "break" Identifier? ";"
+Statement:
+        "continue" Identifier? ";"
+Statement:
+        "do" Statement "while" ParExpression ";"
+Statement:
+        "for" "(" ForInit? ";" Expression? ";" ForUpdate? ")" Statement
+Statement:
+        "if" ParExpression Statement ("else" Statement)?
+Statement:
+        "return" Expression? ";"
+Statement:
+        "switch" ParExpression "{" SwitchBlockStatementGroups "}"
+Statement:
+        "synchronized" ParExpression Block
+Statement:
+        "throw" Expression ";"
+Statement:
+        "try" Block (Catches | (Catches? "finally" Block))
+Statement:
+        "while" ParExpression Statement
+Statement:
+        Block
+Statement:
+        ExpressionStatement
+Statement:
+        Identifier ":" Statement
+StatementExpression:
+        Expression
+SuperSuffix:
+        "." Identifier Arguments?
+SuperSuffix:
+        Arguments
+SwitchBlockStatementGroup:
+        SwitchLabel BlockStatements
+SwitchBlockStatementGroups:
+        SwitchBlockStatementGroup*
+SwitchLabel:
+        "case" ConstantExpression ":"
+SwitchLabel:
+        "default" ":"
+Type:
+        BasicType
+Type:
+        Identifier ("." Identifier)* BracketsOpt
+TypeDeclaration:
+        ";"
+TypeDeclaration:
+        ClassOrInterfaceDeclaration
+TypeList:
+        Type ("," Type)*
+VariableDeclarator:
+        Identifier VariableDeclaratorRest
+VariableDeclaratorId:
+        Identifier BracketsOpt
+VariableDeclaratorRest:
+        BracketsOpt ("=" VariableInitializer)?
+VariableDeclarators:
+        VariableDeclarator ("," VariableDeclarator)*
+VariableInitializer:
+        ArrayInitializer
+VariableInitializer:
+        Expression
+VoidInterfaceMethodDeclaratorRest:
+        FormalParameters BracketsOpt ("throws" QualifiedIdentifierList)? ";"

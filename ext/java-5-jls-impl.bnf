@@ -1,0 +1,492 @@
+Annotation:
+        "@" QualifiedIdentifier ("(" (Identifier "=")? ElementValue ")")?
+AnnotationConstantRest:
+        VariableDeclarators
+AnnotationMethodOrConstantRest:
+        AnnotationConstantRest
+AnnotationMethodOrConstantRest:
+        Identifier AnnotationMethodRest
+AnnotationMethodRest:
+        "(" ")" ("[" "]")* DefaultValue?
+Annotations:
+        Annotation Annotations?
+AnnotationTypeBody:
+        "{" AnnotationTypeElementDeclarations? "}"
+AnnotationTypeDeclaration:
+        "@" "interface" Identifier AnnotationTypeBody
+AnnotationTypeElementDeclaration:
+        Modifier* AnnotationTypeElementRest
+AnnotationTypeElementDeclarations:
+        AnnotationTypeElementDeclaration
+AnnotationTypeElementDeclarations:
+        AnnotationTypeElementDeclarations AnnotationTypeElementDeclaration
+AnnotationTypeElementRest:
+        AnnotationTypeDeclaration
+AnnotationTypeElementRest:
+        ClassDeclaration
+AnnotationTypeElementRest:
+        EnumDeclaration
+AnnotationTypeElementRest:
+        InterfaceDeclaration
+AnnotationTypeElementRest:
+        Type AnnotationMethodOrConstantRest ";"
+Arguments:
+        "(" (Expression ("," Expression)*)? ")"
+ArrayCreatorRest:
+        "[" (("]" ("[" "]")* ArrayInitializer) | (Expression "]" ("[" Expression "]")* ("[" "]")*))
+ArrayInitializer:
+        "{" (VariableInitializer ("," VariableInitializer)* ","?)? "}"
+AssignmentOperator:
+        "-="
+AssignmentOperator:
+        "*="
+AssignmentOperator:
+        "/="
+AssignmentOperator:
+        "&="
+AssignmentOperator:
+        "%="
+AssignmentOperator:
+        "^="
+AssignmentOperator:
+        "+="
+AssignmentOperator:
+        "<<="
+AssignmentOperator:
+        "="
+AssignmentOperator:
+        ">>="
+AssignmentOperator:
+        ">>>="
+AssignmentOperator:
+        "|="
+BasicType:
+        "boolean"
+BasicType:
+        "byte"
+BasicType:
+        "char"
+BasicType:
+        "double"
+BasicType:
+        "float"
+BasicType:
+        "int"
+BasicType:
+        "long"
+BasicType:
+        "short"
+Block:
+        "{" BlockStatements "}"
+BlockStatement:
+        (Identifier ":")? Statement
+BlockStatement:
+        ClassOrInterfaceDeclaration
+BlockStatement:
+        LocalVariableDeclarationStatement
+BlockStatements:
+        BlockStatement*
+Bound:
+        Type ("&" Type)*
+CatchClause:
+        "catch" "(" FormalParameter ")" Block
+Catches:
+        CatchClause CatchClause*
+ClassBody:
+        "{" ClassBodyDeclaration* "}"
+ClassBodyDeclaration:
+        ";"
+ClassBodyDeclaration:
+        "static"? Block
+ClassBodyDeclaration:
+        Modifier* MemberDecl
+ClassCreatorRest:
+        Arguments ClassBody?
+ClassDeclaration:
+        EnumDeclaration
+ClassDeclaration:
+        NormalClassDeclaration
+ClassOrInterfaceDeclaration:
+        Modifier* (ClassDeclaration | InterfaceDeclaration)
+CompilationUnit:
+        (Annotations? "package" QualifiedIdentifier ";")? ImportDeclaration* TypeDeclaration*
+ConditionalExpression:
+        Expression2 Expression1Rest
+ConstantDeclarator:
+        Identifier ConstantDeclaratorRest
+ConstantDeclaratorRest:
+        ("[" "]")* "=" VariableInitializer
+ConstantDeclaratorsRest:
+        ConstantDeclaratorRest ("," ConstantDeclarator)*
+ConstantExpression:
+        Expression
+ConstructorDeclaratorRest:
+        FormalParameters ("throws" QualifiedIdentifierList)? MethodBody
+CreatedName:
+        Identifier NonWildcardTypeArguments? ("." Identifier NonWildcardTypeArguments?)*
+Creator:
+        NonWildcardTypeArguments? CreatedName (ArrayCreatorRest | ClassCreatorRest)
+DefaultValue:
+        "default" ElementValue
+ElementValue:
+        Annotation
+ElementValue:
+        ConditionalExpression
+ElementValue:
+        ElementValueArrayInitializer
+ElementValueArrayInitializer:
+        "{" ElementValues? ","? "}"
+ElementValues:
+        ElementValue ("," ElementValues)?
+EnumBody:
+        (EnumConstants? ","? EnumBodyDeclarations?)*
+EnumBodyDeclarations:
+        ";" ClassBodyDeclaration*
+EnumConstant:
+        Annotations Identifier Arguments? ClassBody?
+EnumConstantName:
+        Identifier
+EnumConstants:
+        EnumConstant
+EnumConstants:
+        EnumConstants "," EnumConstant
+EnumDeclaration:
+        "enum" Identifier ("implements" TypeList)? EnumBody
+ExplicitGenericInvocation:
+        NonWildcardTypeArguments ExplicitGenericInvocationSuffix
+ExplicitGenericInvocationSuffix:
+        "super" SuperSuffix
+ExplicitGenericInvocationSuffix:
+        Identifier Arguments
+Expression:
+        Expression1 (AssignmentOperator Expression1)?
+Expression1:
+        Expression2 Expression1Rest?
+Expression1Rest:
+        "?" Expression ":" Expression1
+Expression2:
+        Expression3 Expression2Rest?
+Expression2Rest:
+        "instanceof" Type
+Expression2Rest:
+        (InfixOp Expression3)*
+Expression3:
+        "(" (Expression | Type) ")" Expression3
+Expression3:
+        PrefixOp Expression3
+Expression3:
+        Primary Selector* PostfixOp*
+Expressions:
+        ("," StatementExpression)*
+ForControl:
+        ForInit ";" Expression? ";" ForUpdate?
+ForControl:
+        ForVarControl
+ForInit:
+        StatementExpression Expressions
+FormalParameter:
+        "final"? Type VariableDeclaratorId
+FormalParameterDecls:
+        ("final" Annotations? Type FormalParameterDeclsRest)?
+FormalParameterDeclsRest:
+        "..." VariableDeclaratorId
+FormalParameterDeclsRest:
+        VariableDeclaratorId ("," FormalParameterDecls)?
+FormalParameters:
+        "(" FormalParameterDecls? ")"
+ForUpdate:
+        StatementExpression Expressions
+ForVarControl:
+        "final"? Annotations? Type Identifier ForVarControlRest
+ForVarControlRest:
+        ":" Expression
+ForVarControlRest:
+        VariableDeclaratorsRest ";" Expression? ";" ForUpdate?
+GenericMethodOrConstructorDecl:
+        TypeParameters GenericMethodOrConstructorRest
+GenericMethodOrConstructorRest:
+        (Type | "void") Identifier MethodDeclaratorRest
+GenericMethodOrConstructorRest:
+        Identifier ConstructorDeclaratorRest
+IdentifierSuffix:
+        "." ("class" | ExplicitGenericInvocation | "this" | ("super" Arguments) | ("new" NonWildcardTypeArguments? InnerCreator))
+IdentifierSuffix:
+        "[" (("]" ("[" "]")* "." "class") | (Expression "]"))
+IdentifierSuffix:
+        Arguments
+ImportDeclaration:
+        "import" "static"? Identifier ("." Identifier)* ("." "*")? ";"
+InfixOp:
+        "-"
+InfixOp:
+        "!="
+InfixOp:
+        "*"
+InfixOp:
+        "/"
+InfixOp:
+        "&"
+InfixOp:
+        "&&"
+InfixOp:
+        "%"
+InfixOp:
+        "^"
+InfixOp:
+        "+"
+InfixOp:
+        "<"
+InfixOp:
+        "<<"
+InfixOp:
+        "<="
+InfixOp:
+        "=="
+InfixOp:
+        ">"
+InfixOp:
+        ">="
+InfixOp:
+        ">>"
+InfixOp:
+        ">>>"
+InfixOp:
+        "|"
+InfixOp:
+        "||"
+InnerCreator:
+        Identifier ClassCreatorRest
+InterfaceBody:
+        "{" InterfaceBodyDeclaration* "}"
+InterfaceBodyDeclaration:
+        ";"
+InterfaceBodyDeclaration:
+        Modifier* InterfaceMemberDecl
+InterfaceDeclaration:
+        AnnotationTypeDeclaration
+InterfaceDeclaration:
+        NormalInterfaceDeclaration
+InterfaceGenericMethodDecl:
+        TypeParameters (Type | "void") Identifier InterfaceMethodDeclaratorRest
+InterfaceMemberDecl:
+        "void" Identifier VoidInterfaceMethodDeclaratorRest
+InterfaceMemberDecl:
+        ClassDeclaration
+InterfaceMemberDecl:
+        InterfaceDeclaration
+InterfaceMemberDecl:
+        InterfaceGenericMethodDecl
+InterfaceMemberDecl:
+        InterfaceMethodOrFieldDecl
+InterfaceMethodDeclaratorRest:
+        FormalParameters ("[" "]")* ("throws" QualifiedIdentifierList)? ";"
+InterfaceMethodOrFieldDecl:
+        Type Identifier InterfaceMethodOrFieldRest
+InterfaceMethodOrFieldRest:
+        ConstantDeclaratorsRest ";"
+InterfaceMethodOrFieldRest:
+        InterfaceMethodDeclaratorRest
+Literal:
+        BooleanLiteral
+Literal:
+        CharacterLiteral
+Literal:
+        FloatingPointLiteral
+Literal:
+        IntegerLiteral
+Literal:
+        NullLiteral
+Literal:
+        StringLiteral
+LocalVariableDeclarationStatement:
+        "final"? Type VariableDeclarators ";"
+MemberDecl:
+        "void" Identifier VoidMethodDeclaratorRest
+MemberDecl:
+        ClassDeclaration
+MemberDecl:
+        GenericMethodOrConstructorDecl
+MemberDecl:
+        Identifier ConstructorDeclaratorRest
+MemberDecl:
+        InterfaceDeclaration
+MemberDecl:
+        MethodOrFieldDecl
+MethodBody:
+        Block
+MethodDeclaratorRest:
+        FormalParameters ("[" "]")* ("throws" QualifiedIdentifierList)? (MethodBody | ";")
+MethodOrFieldDecl:
+        Type Identifier MethodOrFieldRest
+MethodOrFieldRest:
+        MethodDeclaratorRest
+MethodOrFieldRest:
+        VariableDeclaratorRest
+Modifier:
+        "abstract"
+Modifier:
+        "final"
+Modifier:
+        "native"
+Modifier:
+        "private"
+Modifier:
+        "protected"
+Modifier:
+        "public"
+Modifier:
+        "static"
+Modifier:
+        "strictfp"
+Modifier:
+        "synchronized"
+Modifier:
+        "transient"
+Modifier:
+        "volatile"
+Modifier:
+        Annotation
+NonWildcardTypeArguments:
+        "<" TypeList ">"
+NormalClassDeclaration:
+        "class" Identifier TypeParameters? ("extends" Type)? ("implements" TypeList)? ClassBody
+NormalInterfaceDeclaration:
+        "interface" Identifier TypeParameters? ("extends" TypeList)? InterfaceBody
+ParExpression:
+        "(" Expression ")"
+PostfixOp:
+        "--"
+PostfixOp:
+        "++"
+PrefixOp:
+        "--"
+PrefixOp:
+        "-"
+PrefixOp:
+        "!"
+PrefixOp:
+        "+"
+PrefixOp:
+        "++"
+PrefixOp:
+        "~"
+Primary:
+        "new" Creator
+Primary:
+        "super" SuperSuffix
+Primary:
+        "this" Arguments?
+Primary:
+        "void" "." "class"
+Primary:
+        BasicType ("[" "]")* "." "class"
+Primary:
+        Identifier ("." Identifier)* IdentifierSuffix?
+Primary:
+        Literal
+Primary:
+        NonWildcardTypeArguments (ExplicitGenericInvocationSuffix | ("this" Arguments))
+Primary:
+        ParExpression
+QualifiedIdentifier:
+        Identifier ("." Identifier)*
+QualifiedIdentifierList:
+        QualifiedIdentifier ("," QualifiedIdentifier)*
+Selector:
+        "." "new" NonWildcardTypeArguments? InnerCreator
+Selector:
+        "." "super" SuperSuffix
+Selector:
+        "." "this"
+Selector:
+        "." ExplicitGenericInvocation
+Selector:
+        "." Identifier Arguments?
+Selector:
+        Expression?
+Statement:
+        ";"
+Statement:
+        "assert" Expression (":" Expression)? ";"
+Statement:
+        "break" Identifier? ";"
+Statement:
+        "continue" Identifier? ";"
+Statement:
+        "do" Statement "while" ParExpression ";"
+Statement:
+        "for" "(" ForControl ")" Statement
+Statement:
+        "if" ParExpression Statement ("else" Statement)?
+Statement:
+        "return" Expression? ";"
+Statement:
+        "switch" ParExpression "{" SwitchBlockStatementGroups "}"
+Statement:
+        "synchronized" ParExpression Block
+Statement:
+        "throw" Expression ";"
+Statement:
+        "try" Block (Catches | (Catches? "finally" Block))
+Statement:
+        "while" ParExpression Statement
+Statement:
+        Block
+Statement:
+        Identifier ":" Statement
+Statement:
+        StatementExpression ";"
+StatementExpression:
+        Expression
+SuperSuffix:
+        "." Identifier Arguments?
+SuperSuffix:
+        Arguments
+SwitchBlockStatementGroup:
+        SwitchLabel BlockStatements
+SwitchBlockStatementGroups:
+        SwitchBlockStatementGroup*
+SwitchLabel:
+        "case" ConstantExpression ":"
+SwitchLabel:
+        "case" EnumConstantName ":"
+SwitchLabel:
+        "default" ":"
+Type:
+        BasicType
+Type:
+        Identifier TypeArguments? ("." Identifier TypeArguments?)* ("[" "]")*
+TypeArgument:
+        "?" (("extends" | "super") Type)?
+TypeArgument:
+        Type
+TypeArguments:
+        "<" TypeArgument ("," TypeArgument)* ">"
+TypeDeclaration:
+        ";"
+TypeDeclaration:
+        ClassOrInterfaceDeclaration
+TypeList:
+        Type ("," Type)*
+TypeParameter:
+        Identifier ("extends" Bound)?
+TypeParameters:
+        "<" TypeParameter ("," TypeParameter)* ">"
+VariableDeclarator:
+        Identifier VariableDeclaratorRest
+VariableDeclaratorId:
+        Identifier ("[" "]")*
+VariableDeclaratorRest:
+        ("[" "]")* ("=" VariableInitializer)?
+VariableDeclarators:
+        VariableDeclarator ("," VariableDeclarator)*
+VariableDeclaratorsRest:
+        VariableDeclaratorRest ("," VariableDeclarator)*
+VariableInitializer:
+        ArrayInitializer
+VariableInitializer:
+        Expression
+VoidInterfaceMethodDeclaratorRest:
+        FormalParameters ("throws" QualifiedIdentifierList)? ";"
+VoidMethodDeclaratorRest:
+        FormalParameters ("throws" QualifiedIdentifierList)? (MethodBody | ";")

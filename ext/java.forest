@@ -7,8 +7,6 @@
 (Import "java.patterns.forest")
 (Import "java.rules.forest")
 
-(Rule Keyword (//))
-
 ; start parsing here
 (Rule Start (+ WhiteSpace CompilationUnit EndOfFile))
 ; start = WhiteSpace CompilationUnit EndOfFile
