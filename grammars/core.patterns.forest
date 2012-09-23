@@ -1,0 +1,13 @@
+
+;Defines the patterns needed to read forest.peg.scm
+
+(Import "core.rules.forest")
+
+(SyntaxPattern (* 'c) (%*% (NewName) 'c))
+(SyntaxPattern (%*% 'n 'c) (Rule 'n (/ (+ 'c 'n) ())))
+(SyntaxPattern (tok 'c) (+ 'c WhiteSpace))
+(SyntaxPattern (parens 'c) (+ (tok "(") 'c (tok ")")))
+(SyntaxPattern (sym 'c) (tok (+ 'c (! NameChar))))
+             
+(SyntaxPattern (? 'c) (/ 'c ()))
+(SyntaxPattern (& 'c) (! (! 'c)))

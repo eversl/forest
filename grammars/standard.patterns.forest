@@ -1,13 +1,36 @@
+; Definitions for patterns needed to read the java grammar definitions 
 
-;Defines the patterns needed to read forest.peg.scm
+(Import "core.patterns.forest")
+(Import "core.rules.forest")
 
 (Import "standard.rules.forest")
 
-(SyntaxPattern (* 'c) (%*% (NewName) 'c))
-(SyntaxPattern (%*% 'n 'c) (Rule 'n (/ (+ 'c 'n) ())))
-(SyntaxPattern (tok 'c) (+ 'c WhiteSpace))
+(SyntaxPattern (oper 'c) (+ 'c WhiteSpace))
+(SyntaxPattern (seq 'i 's) (+ 'i (* (+ 's 'i))))
+(SyntaxPattern (tr-seq 'i 's) (+ (seq 'i 's) (? 's)))
+(SyntaxPattern (list 'c) (seq 'c comma))
+(SyntaxPattern (tr-list 'c) (tr-seq 'c comma))
+
+(SyntaxPattern (?+ '''c) (? (+ '''c)))
+(SyntaxPattern (*+ '''c) (* (+ '''c)))
+(SyntaxPattern (*1 'c) (+ 'c (* 'c)))
+
 (SyntaxPattern (parens 'c) (+ (tok "(") 'c (tok ")")))
-(SyntaxPattern (sym 'c) (tok (+ 'c (! NameChar))))
+(SyntaxPattern (brackets 'c) (+ (tok "[") 'c (tok "]")))
+(SyntaxPattern (braces 'c) (+ (tok "{") 'c (tok "}")))
+(SyntaxPattern (chevrons 'c) (+ (tok "<") 'c (tok ">")))
+
+(SyntaxPattern (parens$ 'c) (+ (tok "(") ($ (+ 'c (tok ")")) "could not find closing ')'")))
+(SyntaxPattern (brackets$ 'c) (+ (tok "[") ($ (+ 'c (tok "]")) "could not find closing ']'")))
+(SyntaxPattern (braces$ 'c) (+ (tok "{") ($ (+ 'c (tok "}")) "could not find closing '}'")))
+(SyntaxPattern (chevrons$ 'c) (+ (tok "<") ($ (+ 'c (tok ">")) "could not find closing '>'")))
+
+(SyntaxPattern (body-braces$ 'c) (@ "body" (+ (tok "{") ($ (+ 'c (tok "}")) "could not find '}' closing the definition body"))))
+
+(SyntaxPattern (@: 'n '''r) (@ 'n (+ (kw 'n) '''r)))
+(SyntaxPattern (@$: 'n '''r) (@ 'n (+ (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
+(SyntaxPattern (@.: 'f 'n '''r) (@ 'n (+ 'f (kw 'n) '''r)))
+(SyntaxPattern (@.$: 'f 'n '''r) (@ 'n (+ 'f (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
+
+(SyntaxPattern (kw 'c) (+ (Insert Keyword (+ 'c (! LetterOrDigit))) WhiteSpace))
              
-(SyntaxPattern (? 'c) (/ 'c ()))
-(SyntaxPattern (& 'c) (! (! 'c)))

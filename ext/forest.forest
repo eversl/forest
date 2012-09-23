@@ -1,5 +1,5 @@
-(Import "standard.patterns.forest")
-(Import "standard.rules.forest")
+(Import "core.patterns.forest")
+(Import "core.rules.forest")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,7 +40,7 @@
              Name
              (@ "String" StringLiteral)
              (@ "Unexpanded" (parens (+ (sym "Unexpanded") Sexpr)))
-             (@ "SyntaxPattern" (parens (+ (sym "SyntaxPattern") Sexpr Sexpr)))
+             (@ "SyntaxPattern" (parens (+ (sym "TermPattern") (@ "Unexpanded" Sexpr) (@ "Unexpanded" Sexpr))))
              (@ "Rule" (parens (+ (sym "Rule") Name Sexpr)))
              (@ "Insert" (parens (+ (sym "Insert") Name Sexpr)))
              (@ "NewName" (parens (+ (sym "NewName"))))
@@ -55,6 +55,8 @@
              (@ "@" (parens (+ (sym "@") Sexpr Sexprs)))
              (@ ">" (parens (+ (sym ">") Sexpr)))
              (@ "$" (parens (+ (sym "$") Sexpr Sexprs)))
+             (@ "^" (parens (+ (sym "^") Sexpr Sexprs)))
+             (@ "^=" (parens (+ (sym "^=") Sexpr Sexprs)))
              (@ "Null" Null)
              ))
 

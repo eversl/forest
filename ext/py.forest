@@ -1,0 +1,316 @@
+;;;;; Python 2.7.3 grammar specification
+
+
+(Import "core.patterns.forest")
+(Import "core.rules.forest")
+
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
+
+(Import "python.patterns.forest")
+(Import "python.rules.forest")
+
+(Rule Start file_input_)
+
+;single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
+;file_input: (NEWLINE | stmt)* ENDMARKER
+(PyRule file_input (+ (^ ()) (Py* (// Newline (Py stmt))) EndOfFile))
+;eval_input: testlist NEWLINE* ENDMARKER
+
+;decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
+(PyRule decorator (+ (Pytok "@") (Py dotted_name) (? (Pyparens (? (Py arglist)))) Newline))
+;decorators: decorator+
+(PyRule decorators (Py*1 (Py decorator)))
+;decorated: decorators (classdef | funcdef)
+(PyRule decorated (+ (Py decorators) (// (Py classdef) (Py funcdef))))
+;funcdef: 'def' NAME parameters ':' suite
+(PyRule funcdef (+ (Pykw "def") (Py NAME) (Py parameters) (Py colon) (Py suite)))
+;parameters: '(' [varargslist] ')'
+(PyRule parameters (+ (Pyparens (? (Py varargslist)))))
+;varargslist: ((fpdef ['=' test] ',')*
+;              ('*' NAME [',' '**' NAME] | '**' NAME) |
+;              fpdef ['=' test] (',' fpdef ['=' test])* [','])
+(PyRule varargslist  (// (+ (Py* (Py fpdef) (?+ (Py equals) (Py test)) (Py comma))
+                            (// (+ (Py star) (Py NAME) (?+ (Py comma) (Py dblstar) (Py NAME)))
+                                (+ (Py dblstar) (Py NAME))))
+                         (+ (Py fpdef) (?+ (Py equals) (Py test)) (Py* (Py comma) (Py fpdef) (?+ (Py equals) (Py test))) (? (Py comma)))))
+;fpdef: NAME | '(' fplist ')'
+(PyRule fpdef (// (Py NAME) (Pyparens (Py fplist))))
+
+;fplist: fpdef (',' fpdef)* [',']
+(PyRule fplist (+ fpdef (Py* (Py comma) fpdef) (? (Py comma))))
+
+;stmt: simple_stmt | compound_stmt
+(PyRule stmt (// (Py simple_stmt) (Py compound_stmt)))
+;simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
+(PyRule simple_stmt (+ (Pytr-seq (Py small_stmt) (tok_ ";")) Newline))
+;small_stmt: (expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt |
+;             import_stmt | global_stmt | exec_stmt | assert_stmt)
+(PyRule small_stmt (// (Py expr_stmt) (Py print_stmt) (Py del_stmt) (Py pass_stmt) (Py flow_stmt) (Py import_stmt) (Py global_stmt) (Py exec_stmt) (Py assert_stmt)))
+;expr_stmt: testlist (augassign (yield_expr|testlist) |
+;                     ('=' (yield_expr|testlist))*)
+(PyRule expr_stmt (+ (Py testlist)  (// (+ (Py augassign) (// (Py yield_expr) (Py testlist))) (Py* (Py equals) (// (Py yield_expr) (Py testlist))))))
+;testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
+(PyRule testlist_star_expr (tr-seq (// test star_expr) comma))
+;augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
+;            '<<=' | '>>=' | '**=' | '//=')
+(PyRule augassign (// (Pytok "+=") (Pytok "-=") (Pytok "*=") (Pytok "/=") (Pytok "%=") (Pytok "&=") (Pytok "|=") (Pytok "^=") (Pytok "<<=") (Pytok ">>=") (Pytok "**=") (Pytok "//=")))
+;# For normal assignments, additional restrictions enforced by the interpreter
+;print_stmt: 'print' ( [ test (',' test)* [','] ] |
+;                      '>>' test [ (',' test)+ [','] ] )
+(PyRule print_stmt (+ (Pykw "print") (/ (+ (Pytok ">>") (Py test) (?+ (Py comma) (Py test) (Py* (Py comma) (Py test)) (? (Py comma))))
+                                        (?+ (Py test) (Py* (Py comma) (Py test)) (? (Py comma))))))
+;del_stmt: 'del' exprlist
+(PyRule del_stmt (+ (Pykw "del") (Py exprlist)))
+;pass_stmt: 'pass'
+(PyRule pass_stmt (Pykw "pass"))
+;flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
+(PyRule flow_stmt (// (Py break_stmt) (Py continue_stmt) (Py return_stmt) (Py raise_stmt) (Py yield_stmt)))
+;break_stmt: 'break'
+(PyRule break_stmt (Pykw "break"))
+;continue_stmt: 'continue'
+(PyRule continue_stmt (Pykw "continue"))
+;return_stmt: 'return' [testlist]
+(PyRule return_stmt (+ (Pykw "return") (? (Py testlist))))
+;yield_stmt: yield_expr
+(PyRule yield_stmt (Py yield_expr))
+;raise_stmt: 'raise' [test [',' test [',' test]]]
+(PyRule raise_stmt (+ (Pykw "raise") (?+ (Py test) (?+ (Py comma) (Py test) (?+ (Py comma) (Py test))))))
+;import_stmt: import_name | import_from
+(PyRule import_stmt (// (Py import_name) (Py import_from)))
+;import_name: 'import' dotted_as_names
+(PyRule import_name (+ (Pykw "import") (Py dotted_as_names)))
+;import_from: ('from' ('.'* dotted_name | '.'+)
+;              'import' ('*' | '(' import_as_names ')' | import_as_names))
+(PyRule import_from (+ (Pykw "from") (// (+ (Py* (Py dot)) (Py dotted_name)) (Py*1 (Py dot)))
+                       (Pykw "import") (// (Py star) (Pyparens import_as_names) (Py import_as_names))))
+;import_as_name: NAME ['as' NAME]
+(PyRule import_as_name (+ (Py NAME) (?+ (Pykw "as") (Py NAME))))
+;
+;dotted_as_name: dotted_name ['as' NAME]
+(PyRule dotted_as_name_ (+ dotted_name_ (?+ (Pykw "as") (Py NAME))))
+;import_as_names: import_as_name (',' import_as_name)* [',']
+(PyRule import_as_names (Pytr-list (Py import_as_name)))
+;dotted_as_names: dotted_as_name (',' dotted_as_name)*
+(PyRule dotted_as_names_ (list dotted_as_name_))
+;dotted_name: NAME ('.' NAME)*
+(PyRule dotted_name (Pyseq (Py NAME) dot_))
+;global_stmt: 'global' NAME (',' NAME)*
+(PyRule global_stmt (+ (Pykw "global") (Pylist (Py NAME))))
+;exec_stmt: 'exec' expr ['in' test [',' test]]
+(PyRule exec_stmt (+ (Pykw "exec") expr_ (?+ (Pykw "in") (Py test) (?+ (Py comma) (Py test)))))
+;assert_stmt: 'assert' test [',' test]
+(PyRule assert_stmt (+ (Pykw "assert") (Py test) (?+ (Py comma) (Py test))))
+;
+;compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
+(PyRule compound_stmt (// (Py if_stmt) (Py while_stmt) (Py for_stmt) (Py try_stmt) (Py with_stmt) (Py funcdef) (Py classdef) (Py decorated)))
+;if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
+(PyRule if_stmt (+ (Pykw "if") (Py test) (Py colon) (Py suite) (Py* (Pykw "elif") (Py test) (Py colon) (Py suite)) (?+ (Pykw "else") (Py colon) (Py suite))))
+;while_stmt: 'while' test ':' suite ['else' ':' suite]
+(PyRule while_stmt (+ (Pykw "while") (Py test) (Py colon) (Py suite) (?+ (Pykw "else") (Py colon) (Py suite))))
+;for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
+(PyRule for_stmt (+ (Pykw "for") (Py exprlist) (kw "in") (Py testlist) (Py colon) (Py suite) (?+ (Pykw "else") (Py colon) (Py suite))))
+;try_stmt: ('try' ':' suite
+;           ((except_clause ':' suite)+
+;            ['else' ':' suite]
+;            ['finally' ':' suite] |
+;           'finally' ':' suite))
+(PyRule try_stmt (+ (Pykw "try") (Py colon) (Py suite) 
+                     (// (+ (Py*1 (+ (Py except_clause) (Py colon) (Py suite))) (?+ (Pykw "else") (Py colon) (Py suite)) (?+ (Pykw "finally") (Py colon) (Py suite)))
+                         (+ (Pykw "finally") (Py colon) (Py suite)))))
+;with_stmt: 'with' with_item (',' with_item)*  ':' suite
+(PyRule with_stmt (+ (Pykw "with") (Pylist with_item) (Py colon) (Py suite)))
+;with_item: test ['as' expr]
+(PyRule with_item (+ (Py test) (?+ (Pykw "as") (Py expr))))
+;# NB compile.c makes sure that the default except clause is last
+;except_clause: 'except' [test [('as' | ',') test]]
+(PyRule except_clause (+ (Pykw "except") (?+ (Py test) (?+ (// (Pykw "as") (Py comma)) (Py NAME)))))
+;suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+(Rule suite_ (// simple_stmt_ (+ Newline INDENT (seq stmt_ SAME) DEDENT)))
+;
+;# Backward compatibility cruft to support:
+;# [ x for x in lambda: True, lambda: False if x() ]
+;# even while also allowing:
+;# lambda x: 5 if x else 2
+;# (But not a mix of the two)
+;testlist_safe: old_test [(',' old_test)+ [',']]
+(PyRule testlist_safe (+ old_test (?+ (*1 (+ comma old_test)) (? comma))))
+;old_test: or_test | old_lambdef
+(PyRule old_test (// or_test old_lambdef))
+;old_lambdef: 'lambda' [varargslist] ':' old_test
+(PyRule old_lambdef (+ (kw "lambda") (? varargslist) colon old_test))
+;    
+;test: or_test ['if' or_test 'else' test] | lambdef
+(PyRule test (// (+ (Py or_test) (?+ (Pykw "if") (Py or_test) (Pykw "else") (Py test))) (Py lambdef)))
+;or_test: and_test ('or' and_test)*
+(PyRule or_test (Pyseq (Py and_test) (Pykw "or")))
+;and_test: not_test ('and' not_test)*
+(PyRule and_test  (Pyseq (Py not_test)  (Pykw  "and")))
+;not_test: 'not' not_test | comparison
+(PyRule not_test  (/ (+ (Pykw  "not") (Py not_test)) (Py comparison)))
+;comparison: expr (comp_op expr)*
+(PyRule comparison  (Pyseq (Py expr)  (Py comp_op)))
+;comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
+(PyRule comp_op (/ (Pytok "==") (Pytok "!=") (Pytok ">=") (Pytok "<=") (Pytok "<>") (Pytok "<") (Pytok ">") (Pykw "in")
+                   (+ (Pykw "not") (Pykw "in")) (+ (Pykw "is") (Pykw "not")) (Pykw "is")))
+;expr: xor_expr ('|' xor_expr)*
+(PyRule expr (Pyseq (Py xor_expr) (Pytok "|")))
+;xor_expr: and_expr ('^' and_expr)*
+(PyRule xor_expr (Pyseq (Py and_expr) (Pytok "^")))
+;and_expr: shift_expr ('&' shift_expr)*
+(PyRule and_expr (Pyseq (Py shift_expr) (Pytok "&")))
+;shift_expr: arith_expr (('<<'|'>>') arith_expr)*
+(PyRule shift_expr (Pyseq (Py arith_expr)  (// (Pytok  "<<") (Pytok  ">>"))))
+;arith_expr: term (('+'|'-') term)*
+(PyRule arith_expr (Pyseq (Py term) (// (Pytok  "+") (Pytok  "-"))))
+;term: factor (('*'|'/'|'%'|'//') factor)*
+(PyRule term (Pyseq (Py factor) (// (Py star) (Pytok "//") (Pytok "/") (Pytok "%"))))
+;factor: ('+'|'-'|'~') factor | power
+(PyRule factor (// (+ (// (Pytok "+") (Pytok "-") (Pytok  "~")) (Py factor)) (Py power)))
+;power: atom trailer* ['**' factor]
+(PyRule power (+ (Py atom) (Py* (Py trailer)) (?+ (Py dblstar) (Py factor))))
+;atom: ('(' [yield_expr|testlist_comp] ')' |
+;       '[' [listmaker] ']' |
+;       '{' [dictorsetmaker] '}' |
+;       '`' testlist1 '`' |
+;       NAME | NUMBER | STRING+)
+(PyRule atom (// (Pyparens (? (// yield_expr testlist_comp)))
+                 (Pybrackets (? listmaker))
+                 (Pybraces (? dictorsetmaker))
+                 (+ (tok "`") testlist1 (tok "`"))
+                 (Py NAME) (Py NUMBER) (Py*1 (Py STRING))))
+;listmaker: test ( list_for | (',' test)* [','] )
+(PyRule listmaker (+ test (// list_for (+ (Py* comma test) (? comma)))))
+;testlist_comp: test ( comp_for | (',' test)* [','] )
+(PyRule testlist_comp (+ test (// comp_for (+ (Py* comma test) (? comma)))))
+;lambdef: 'lambda' [varargslist] ':' test
+(PyRule lambdef (+ (Pykw "lambda") (? (Py varargslist)) (Py colon) (Py test)))
+;trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
+(PyRule trailer (// (Pyparens (? (Py arglist))) (+ (Pybrackets (Py subscriptlist))) (+ (Py dot) (Py NAME))))
+;subscriptlist: subscript (',' subscript)* [',']
+(PyRule subscriptlist (+ subscript (Py* comma subscript) (? comma)))
+;subscript: '.' '.' '.' | test | [test] ':' [test] [sliceop]
+(PyRule subscript (/ (+ dot dot dot) (+ (? test) colon (? test) (? sliceop)) test))
+;sliceop: ':' [test]
+(PyRule sliceop (+ colon (? test)))
+;exprlist: expr (',' expr)* [',']
+(PyRule exprlist (Pytr-list (Py expr)))
+;testlist: test (',' test)* [',']
+(PyRule testlist (Pytr-list (Py test)))
+;dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
+;                  (test (comp_for | (',' test)* [','])) )
+(PyRule dictorsetmaker (+ (// (+ test colon test (// comp_for (+ (Py* comma test colon test) (? comma))))
+                              (+ test (// comp_for (+ (Py* comma test) (? comma))) ))))
+;
+;classdef: 'class' NAME ['(' [testlist] ')'] ':' suite
+(PyRule classdef (+ (Pykw "class") (Py NAME) (? (Pyparens (? (Py arglist)))) (Py colon) suite_))
+;
+;arglist: (argument ',')* (argument [',']
+;                         |'*' test (',' argument)* [',' '**' test] 
+;                         |'**' test)
+(PyRule arglist (+ (Py* argument comma) (/ (+ star test (Py* comma argument) (?+ comma dblstar test)) 
+                                          (+ dblstar test)
+                                          (? argument))))
+
+;# The reason that keywords are test nodes instead of NAME is that using NAME
+;# results in an ambiguity. ast.c makes sure it's a NAME.
+;argument: test [comp_for] | test '=' test
+(PyRule argument (/ (+ test (tok "=") test) (+ test (? comp_for))))
+;
+;list_iter: list_for | list_if
+(PyRule list_iter (// list_for list_if))
+;list_for: 'for' exprlist 'in' testlist_safe [list_iter]
+(PyRule list_for (+ (kw "for") exprlist (kw "in") testlist_safe (? list_iter)))
+;list_if: 'if' old_test [list_iter]
+(PyRule list_if (+ (kw "if") old_test (? list_iter)))
+;
+;comp_iter: comp_for | comp_if
+(PyRule comp_iter (// comp_for comp_if))
+;comp_for: 'for' exprlist 'in' or_test [comp_iter]
+(PyRule comp_for (+ (kw "for") exprlist (kw "in") or_test (? comp_iter)))
+;comp_if: 'if' old_test [comp_iter]
+(PyRule comp_if (+ (kw "if") old_test (? comp_iter)))
+;
+;testlist1: test (',' test)*
+(PyRule testlist1 (+ test (Py* comma test)))
+;
+;# not used in grammar, but may appear in "node" passed from Parser to Compiler
+;encoding_decl: NAME
+; 
+;yield_expr: 'yield' [testlist]
+(PyRule yield_expr (+ (Pykw "yield") (? (Py testlist))))
+
+
+;# The reason that keywords are test nodes instead of NAME is that using NAME
+;# results in an ambiguity. ast.c makes sure it's a NAME.
+;
+;# not used in grammar, but may appear in "node" passed from Parser to Compiler
+;encoding_decl: NAME
+;
+;yield_arg: 'from' test | testlist
+(PyRule yield_arg (// (+ (Pykw "from") (Py test)) (Py testlist)))
+
+;;;;;;;;;;;;;; Whitespace and Comments
+
+(Rule WhiteSpace_ (* (/ (+ (! EndOfLine) WhitespaceChar) (+ BackslashChar EndOfLine))))
+(Rule WhiteSpace (* (/ (+ WhitespaceChar) (+ BackslashChar EndOfLine) LineComment)))
+
+(Rule EndOfLine (/ (+ ReturnChar LinefeedChar) ReturnChar LinefeedChar))
+
+(Rule LineComment (+ "#" (* (+ (! EndOfLine) AnyChar))))
+
+(Rule Newline (+ (? LineComment) EndOfLine (*+ WhiteSpace_ (? LineComment) EndOfLine) (^ WhiteSpace_)))
+
+(Rule SAME (^= SAME))
+
+(Rule INDENT (^= INDENT))
+
+(Rule DEDENT (^= DEDENT))
+
+;;;;;;;;;;;;;; Identifiers and Terminals
+(PyRule NAME (Py Identifier))
+
+(PyRule NUMBER (/ (Py ImagLiteral)
+                  (Py FloatingPointLiteral)
+                  (Py IntegerLiteral)))
+
+(PyRule STRING (Py StringLiteral))
+
+(Rule LetterOrDigit (/ LetterChar DigitChar "_"))
+
+(PyRule Identifier (Pytok (< (+ (! StringLiteral) (! Keyword) (/ LetterChar "_") (Py* LetterOrDigit)))))
+
+(PyRule StringLiteral  (@ "string" (Pytok (< (+ (? StringPrefix) (/ LongString ShortString)))))) 
+
+(Rule StringPrefix (/ "ur" "UR" "Ur" "uR" "r" "u" "R" "U"))
+(Rule ShortString (/ (+ SingleQuoteChar (* (+ (! SingleQuoteChar) ShortStringChar)) SingleQuoteChar) (+ DoubleQuoteChar (* (+ (! DoubleQuoteChar) ShortStringChar)) DoubleQuoteChar)))
+(Rule LongString (/ (+ "'''"    (* (+ (! "'''")    LongStringChar)) "'''") 
+                      (+ DoubleQuoteChar DoubleQuoteChar DoubleQuoteChar (* (+ (! (+ DoubleQuoteChar DoubleQuoteChar DoubleQuoteChar)) LongStringChar)) DoubleQuoteChar DoubleQuoteChar DoubleQuoteChar))) 
+(Rule ShortStringChar (/ (+ (! BackslashChar) (! EndOfLine) AnyChar) EscapeSeq)) 
+(Rule LongStringChar (/ (+ (! BackslashChar) AnyChar) EscapeSeq)) 
+(Rule EscapeSeq (+ BackslashChar AsciiChar)) 
+
+
+(PyRule IntegerLiteral  (@ "integer" (Pytok  (< (+ (/ HexInteger OctalInteger DecimalInteger) (? (/ "l" "L"))))))) 
+(Rule DecimalInteger (*1 DigitChar)) 
+(Rule OctalInteger (+ "0" (*1 OctalDigit))) 
+(Rule HexInteger (+ (/ "0x" "0X") (*1 HexDigitChar))) 
+(Rule OctalDigit (/ "0" "1" "2" "3" "4" "5" "6" "7"))
+
+(PyRule FloatingPointLiteral (@ "float" (Pytok (< (/ ExponentFloat PointFloat))))) 
+(Rule PointFloat (/ (+ (? IntegerPart) Fraction) (+ IntegerPart "."))) 
+(Rule ExponentFloat (+ (/ PointFloat IntegerPart) Exponent)) 
+(Rule IntegerPart (*1 DigitChar)) 
+(Rule Fraction (+ "." (*1 DigitChar))) 
+(Rule Exponent (+ (/ "e" "E") (? (/ "+" "-")) (*1 DigitChar))) 
+
+(PyRule ImagLiteral (@ "imaginary" (Pytok (< (+ (/ FloatingPointLiteral IntegerPart) (/ "j" "J")))))) 
+
+;;;;;;;;;;;;;; tokens ;;;;;;;;;;;;;;;;
+
+(PyRule comma (Pytok ","))
+(PyRule colon (Pytok ":"))
+(PyRule dot (Pytok "."))
+(PyRule equals (Pytok "="))
+(PyRule star (+ (! (Py dblstar)) (Pytok "*")))
+(PyRule dblstar (Pytok "**"))

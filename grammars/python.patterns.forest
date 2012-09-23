@@ -1,0 +1,56 @@
+;Defines the patterns needed to read py.forest
+
+(Import "python.rules.forest")
+
+(Import "core.patterns.forest")
+(Import "core.rules.forest")
+
+(Import "standard.patterns.forest")
+(Import "standard.rules.forest")
+
+(SyntaxPattern (tok_ 'c) (+ 'c WhiteSpace_))
+(SyntaxPattern (parens_ 'c) (+ (tok "(") 'c (tok_ ")")))
+(SyntaxPattern (brackets_ 'c) (+ (tok "[") 'c (tok_ "]")))
+(SyntaxPattern (braces_ 'c) (+ (tok "{") 'c (tok_ "}")))
+
+(SyntaxPattern (list_ 'c) (seq 'c comma_))
+(SyntaxPattern (tr-list_ 'c) (tr-seq 'c comma_))
+
+(SyntaxPattern (kw_ 'c) (+ (Insert Keyword (+ 'c (! LetterOrDigit))) WhiteSpace_))
+
+(SyntaxPattern (Py* '''c) [Py%*% : (NewName) '''c])
+
+(SyntaxPattern (Py*1 'c) (+ 'c (Py* 'c)))
+
+(SyntaxPattern (Pytok 'c) (+ 'c (Py WhiteSpace)))
+
+(SyntaxPattern (Pyseq 'i 's) (+ 'i (Py* 's 'i)))
+(SyntaxPattern (Pytr-seq 'i 's) (+ (Pyseq 'i 's) (? 's)))
+
+(SyntaxPattern (Pylist 'c) (Pyseq 'c (Py comma)))
+(SyntaxPattern (Pytr-list 'c) (Pytr-seq 'c (Py comma)))
+
+;; to make the PyRules work
+
+(TermPattern [PyRule : [Name : 'name] 'body] (+ (Unexpanded [Rule : [Name : 'name] [PyBody : #"" 'body]]) (Unexpanded [Rule : [Name : 'name #"_"] [PyBody : #"_" 'body]])))
+
+(TermPattern [PyBody : 'post [Py : [Name : 'exp]]] [Name : 'exp 'post])
+
+;(SyntaxPattern (%*% 'n 'c) (Rule 'n (/ (+ 'c 'n) ())))
+(TermPattern [PyBody : 'post [Py%*% : [Name : 'name] '''body]] (Unexpanded [Rule : [Name : 'name 'post] [PyBody : 'post (/ (+ '''body [Name : 'name 'post]) ())]]))
+
+(TermPattern [PyBody : #""   (Pyparens 'exp)] [Term : [Name : "parens" #""] [PyBody : #"" 'exp]])
+(TermPattern [PyBody : #"_"  (Pyparens 'exp)] [Term : [Name : "parens" #"_"] [PyBody : #"" 'exp]])
+(TermPattern [PyBody : #""   (Pybrackets 'exp)] (brackets  [PyBody : #"" 'exp]))
+(TermPattern [PyBody : #"_"  (Pybrackets 'exp)] (brackets_ [PyBody : #"" 'exp]))
+(TermPattern [PyBody : #""   (Pybraces 'exp)] (braces  [PyBody : #"" 'exp]))
+(TermPattern [PyBody : #"_"  (Pybraces 'exp)] (braces_ [PyBody : #"" 'exp]))
+
+(TermPattern [PyBody : #""  (Pykw 'exp)] [Term : [Name : "kw" #"" ] [PyBody : #""  'exp]])
+(TermPattern [PyBody : #"_" (Pykw 'exp)] [Term : [Name : "kw" #"_"] [PyBody : #"_" 'exp]])
+
+(TermPattern [PyBody : 'post ['name : 'first '''rest]] [PyRest : 'post [PyBody : 'post 'first] [Done] ['name : '''rest]])
+(TermPattern [PyBody : 'post 'exp] 'exp)
+
+(TermPattern [PyRest : 'post 'donefirst [Done : '''donerest] ['name : 'first '''rest]] [PyRest : 'post [PyBody : 'post 'first] [Done : '''donerest 'donefirst] ['name : '''rest]])
+(TermPattern [PyRest : 'post 'donefirst [Done : '''donerest] ['name : '''rest]] ['name : '''donerest 'donefirst])

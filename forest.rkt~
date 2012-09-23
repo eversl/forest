@@ -9,19 +9,33 @@
 
 ;;;;;;;;;;;;;; helper defines to make the verbose output clearer
 
-(define s-e-cnt 0)
-(define (s-e-cnt-same)
-  (make-string s-e-cnt #\space))
-(define (s-e-cnt-up)
-  (begin0 (make-string s-e-cnt #\space) (set! s-e-cnt (+ 1 s-e-cnt))))
-(define (s-e-cnt-dn)
-  (begin (set! s-e-cnt (- s-e-cnt 1)) (make-string s-e-cnt #\space)))
+(define syn-indent-cnt 0)
+(define (syn-indent-cnt-same)
+  (make-string syn-indent-cnt #\space))
+(define (syn-indent-cnt-up)
+  (begin0 (make-string syn-indent-cnt #\space) (set! syn-indent-cnt (+ 1 syn-indent-cnt))))
+(define (syn-indent-cnt-dn)
+  (begin (set! syn-indent-cnt (- syn-indent-cnt 1)) (make-string syn-indent-cnt #\space)))
 (define (printi fmt . args)
-  (printf "~a~a" (s-e-cnt-same) (apply format fmt args)))
+  (printf "~a~a" (syn-indent-cnt-same) (apply format fmt args)))
 (define (printi-up fmt . args)
-  (when *verbose* (printf "~a~a" (s-e-cnt-up) (apply format fmt args))))
+  (when *verbose* (printf "~a~a" (syn-indent-cnt-up) (apply format fmt args))))
 (define (printi-dn fmt . args)
-  (when *verbose* (printf "~a~a" (s-e-cnt-dn) (apply format fmt args))))
+  (when *verbose* (printf "~a~a" (syn-indent-cnt-dn) (apply format fmt args))))
+
+(define pat-indent-cnt 0)
+(define (pat-indent-cnt-same)
+  (make-string pat-indent-cnt #\space))
+(define (pat-indent-cnt-up)
+  (begin0 (make-string pat-indent-cnt #\space) (set! pat-indent-cnt (+ 1 pat-indent-cnt))))
+(define (pat-indent-cnt-dn)
+  (begin (set! pat-indent-cnt (- pat-indent-cnt 1)) (make-string pat-indent-cnt #\space)))
+(define (printip fmt . args)
+  (printf "~a~a" (pat-indent-cnt-same) (apply format fmt args)))
+(define (printip-up fmt . args)
+  (when *verbosep* (printf "~a~a" (pat-indent-cnt-up) (apply format fmt args))))
+(define (printip-dn fmt . args)
+  (when *verbosep* (printf "~a~a" (pat-indent-cnt-dn) (apply format fmt args))))
 
 
 ;;;;;;;;;;;;;; structs
@@ -93,8 +107,11 @@
 
 
 (define (any->string sym)
-  (cond [(string? sym) sym]
-        [(token? sym) (token-chars sym)]))
+  (match sym 
+    [(? string? sym) sym]
+    [(? token? sym) (token-chars sym)]
+    [(term _ _ _ "String" (list s)) (any->string s)]
+    [else (raise-user-error 'any->string "Cannot use \"~a\" as a string~n" sym)]))
 
 ;;;;;;;;; grammar hash table ;;;;;;;;;;;;;;
 (define (rule-exists? sym lang)
@@ -146,6 +163,8 @@
     
     (rule-put! 'Sexpr (mt "//" 
                           (mt "@" (mt "String" "Null") (mt "Name" "Null"))
+                          (mt "@" (mt "String" "^=") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "^=") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
+                          (mt "@" (mt "String" "^") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "^") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
                           (mt "@" (mt "String" "$") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "$") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
                           (mt "@" (mt "String" ">") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" ">") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
                           (mt "@" (mt "String" "@") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "@") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
@@ -187,9 +206,10 @@
                                               PatternPattern)) lang)
     (pattern-put! "TermPattern" (list (cons (mt "TermPattern" (mt "Var" "pat") (mt "Var" "repl")) 
                                             PatternPattern)) lang)
-    (pattern-put! "Rule" (list (cons (mt "Rule" (mt "Name" (mt "Var" "name")) (mt "Var" "rule")) 
+    (pattern-put! "Rule" (list (cons (mt "Rule" (mt "Name" (mt "VarList" "names")) (mt "Var" "rule")) 
                                      (match-lambda*
-                                       [(list read-lang lang (cons _ rule) (cons _ name)) (rule-put! name rule lang) (mt "Name" name)]))) lang) 
+                                       [(list read-lang lang (cons _ rule) (cons _ names)) 
+                                        (let ([name (string-append* (map any->string names))]) (rule-put! name rule lang) (mt "Name" name))]))) lang) 
     (pattern-put! "NewName" (list (cons (mt "NewName") 
                                         (match-lambda*
                                           [(list read-lang lang) (mt "Name" (symbol->string (gensym)))]))) lang)  
@@ -197,34 +217,42 @@
                                        (match-lambda*
                                          [(list read-lang lang (cons _ fil)) 
                                           (let ([f (any->string fil)])
-                                            (when *verbose* (printf "Import ~s, ~a ~a~n" f (language-name read-lang) (language-name lang)))
+                                            (when *verbosep* (printip "Import ~s, ~a ~a~n" f (language-name read-lang) (language-name lang)))
                                             (with-handlers 
                                                 ([exn:fail? (lambda (exn)
                                                               (eprintf (make-errormessage (exn-message exn) (token-file fil) (token-start-pos fil) (token-end-pos fil))))])
                                               (read-grammar f read-lang)))
                                           (mt "Null")]))) lang)
-    (pattern-put! "Insert" (list (cons (mt "Insert" (mt "Name" (mt "Var" "name")) (mt "Var" "rule"))  
+    (pattern-put! "Insert" (list (cons (mt "Insert" (mt "Name" (mt "VarList" "names")) (mt "Var" "rule"))  
                                        (match-lambda*
-                                         [(list read-lang lang (cons _ rule) (cons _ name)) 
-                                          (if (rule-exists? name lang) 
-                                              (let ([term (rule-get name lang)])
-                                                (when (not (and (term? term) (token-equal? (term-name term) "//")))
-                                                  (error 'Insert "insertion in something other than // : ~s -- ~s" name rule))
-                                                (when *verbose* (printf "Insert into (lang ~a) ~s : ~a == ~a~n"  (language-name lang) name rule term))
-                                                (rule-put! name (apply mt (term-name term) (lset-union! term-equal? (list rule) (term-vals term))) lang)
-                                                (mt "Name" name))
-                                              (begin (rule-put! name (mt "//" rule) lang) (mt "Name" name)))]))) lang)
-    (pattern-put! "Term" (list (cons (mt "Term" (mt "Name" (mt "Var" "name")) (mt "VarList" "vals")) 
+                                         [(list read-lang lang (cons _ rule) (cons _ names)) 
+                                          (let ([name (string-append* (map any->string names))])
+                                            (if (rule-exists? name lang) 
+                                                (let ([term (rule-get name lang)])
+                                                  (when (not (and (term? term) (token-equal? (term-name term) "//")))
+                                                    (error 'Insert "insertion in something other than // : ~s -- ~s" name rule))
+                                                  (when *verbosep* (printip "Insert into (lang ~a) ~s : ~a == ~a~n"  (language-name lang) name rule term))
+                                                  (rule-put! name (apply mt (term-name term) (lset-union! term-equal? (list rule) (term-vals term))) lang)
+                                                  rule)
+                                                (begin (rule-put! name (mt "//" rule) lang) rule)))]))) lang)
+    (pattern-put! "Term" (list (cons (mt "Term" (mt "Var" "var") (mt "VarList" "vals")) 
                                      (match-lambda*
-                                       [(list read-lang lang (cons _ vals) (cons _ name)) 
-                                        (let ([new-term (term '() '() '() (if (token? name) (token-chars name) name) vals)])
-                                          (when *verbose* (printf "Creating term ~a~n" new-term))
+                                       [(list read-lang lang (cons _ vals) (cons _ var)) 
+                                        (let* ([new-term (term '() '() '() var vals)])
+                                          (when *verbosep* (printip "Creating variable term ~a~n" new-term))
+                                          new-term)]))
+                               (cons (mt "Term" (mt "Name" (mt "VarList" "names")) (mt "VarList" "vals")) 
+                                     (match-lambda*
+                                       [(list read-lang lang (cons _ vals) (cons _ names)) 
+                                        (let* ([name (string-append* (map any->string names))]
+                                               [new-term (term '() '() '() (if (token? name) (token-chars name) name) vals)])
+                                          (when *verbosep* (printip "Creating term ~a~n" new-term))
                                           new-term)]))) lang)
     (pattern-put! "Token" (list (cons (mt "Token" (mt "Var" "chars")) 
                                       (match-lambda*
                                         [(list read-lang lang (cons _ tok)) 
                                          (unless (token? tok) (raise-user-error 'Token "Content of Token term must be a token, found ~a" tok))
-                                         (when *verbose* (printf "Creating token ~a~n" tok))
+                                         (when *verbosep* (printip "Creating token ~a~n" tok))
                                          tok]))) lang)
     
     lang))
@@ -232,44 +260,44 @@
 (define PatternPattern (match-lambda*
                          [(list read-lang lang (cons _ repl) (cons _ pat)) 
                           (let ([name (term-name pat)])
-                            (when *verbose* (printf "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
+                            (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
                             (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
                             (mt "Name" name))]))
 
 (define (expand-term trm lang modify-lang)
   (cond [(not (term? trm)) trm]
+        [(term? (term-name trm)) (when *verbosep* (printip "var-term ~a~n" trm)) trm]
         [(equal? (term-name trm) "Unexpanded") (car (term-vals trm))]
         [else 
          (let pat-loop ([pats [reverse (pattern-ref (term-name trm) lang)]])
            (if (null? pats) 
                (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
                           (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm)))
-               #;(let ([new-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))])
-                   (if (andmap eq? new-vals (term-vals trm)) trm 
-                       (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
-                                  new-vals)))               
                (let ([bnd (let match-loop ([bindings null]
                                            [pattern (car (car pats))]
                                            [trm trm])
-                            (match pattern 
-                              [(term _ _ _ "UnVar" (list v)) (cons (cons v trm) bindings)]
-                              [(term _ _ _ "Var" (list v)) (cons (cons v (expand-term trm lang modify-lang)) bindings)]
-                              [(term _ _ _ n (list-rest r ... (list (term _ _ _ "UnVarList" (list v)))))
-                               (printf "UnVarList ~a :: ~a~n" pattern trm)
-                               (if (and (term? trm) (equal? (term-name trm) n) (>= (length (term-vals trm)) (length r)))
-                                   (let ([bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
-                                     (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
-                              [(term _ _ _ n (list-rest r ... (list (term _ _ _ "VarList" (list v)))))
-                               (if (and (term? trm) (equal? (term-name trm) n) (>= (length (term-vals trm)) (length r)))
-                                   (let ([bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (take (term-vals trm) (length r)))])
-                                     (if bnd (cons (cons v (map (lambda (trm) (expand-term trm lang modify-lang)) (drop (term-vals trm) (length r)))) bnd) #f)) #f)]
-                              [(term _ _ _ n r) (when *verbose* (printf "Matching term ~a with ~a~n" pattern trm))
-                                                (if (and (term? trm) (token-equal? (term-name trm) n) (eq? (length r) (length (term-vals trm))))
-                                                    (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) bindings r (term-vals trm)) #f)]
-                              [(token _ _ _ c) (when *verbose* (printf "Matching token ~a with ~a~n" pattern trm))
-                                               (if (token-equal? pattern trm) bindings #f)]
-                              [v (if (eq? v trm) bindings #f)]))])
-                 (if bnd (begin (when *verbose* (printi-up "Matched pattern ~a :: ~a~n" (car (car pats)) trm) (printf "~a~n" bnd))
+                            (when *verbosep* (printip-up "Matching ~a on ~a...~n" pattern trm))
+                            (let ([res (match pattern 
+                                         [(term _ _ _ "UnVar" (list v)) (cons (cons v trm) bindings)]
+                                         [(term _ _ _ "Var" (list v)) (cons (cons v (expand-term trm lang modify-lang)) bindings)]
+                                         [(term _ _ _ n (list-rest r ... (list (term _ _ _ "VarList" (list v))))) 
+                                          (if (and (term? trm) (>= (length (term-vals trm)) (length r)))
+                                              (let* ([b (match n 
+                                                          [(term _ _ _ "Var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                          [_ (if (token-equal? (term-name trm) n) bindings #f)])]
+                                                     [bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (take (term-vals trm) (length r)))])
+                                                (if bnd (cons (cons v (map (lambda (trm) (expand-term trm lang modify-lang)) (drop (term-vals trm) (length r)))) bnd) #f)) #f)]
+                                         [(term _ _ _ n r) (if (and (term? trm) (eq? (length r) (length (term-vals trm))))
+                                                               (let ([b (match n 
+                                                                          [(term _ _ _ "Var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                                          [_ (if (token-equal? (term-name trm) n) bindings #f)])])
+                                                                 (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
+                                         [(token _ _ _ c) (when *verbosep* (printip "Matching token ~a with ~a~n" pattern trm))
+                                                          (if (token-equal? pattern trm) bindings #f)]
+                                         [v (if (eq? v trm) bindings #f)])])
+                              (when *verbosep* (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm))
+                              res))])
+                 (if bnd (begin (when *verbosep* (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) trm bnd))
                                 (let ([res 
                                        (expand-term (let replace-loop ([repl (cdr [car pats])])
                                                       (match repl 
@@ -279,11 +307,11 @@
                                                            (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
                                                                                                              (token-chars v) (term-name trm)) (token-file v) (token-start-pos v) (token-end-pos v))) 
                                                                (cdr val)))]
-                                                        [(term l1 l2 l3 n r) (term l1 l2 l3 n (foldr (match-lambda** [((term _ _ _ (or "VarList" "UnVarList") (list v)) r) 
-                                                                                                                      (append (cdr (assoc v bnd token-equal?)) r)]
-                                                                                                                     [(v r) (cons (replace-loop v) r)]) '() r))]
+                                                        [(term l1 l2 l3 n r) (term l1 l2 l3 (replace-loop n) (foldr (match-lambda** [((term _ _ _ "VarList" (list v)) r) 
+                                                                                                                                     (append (cdr (assoc v bnd token-equal?)) r)]
+                                                                                                                                    [(v r) (cons (replace-loop v) r)]) '() r))]
                                                         [v v])) lang modify-lang)])
-                                  (when *verbose* (printi-dn "Replaced ~a with ~a~n" trm res))
+                                  (when *verbosep* (printip-dn "Replaced ~a with ~a~n" trm res))
                                   res)) 
                      (pat-loop (cdr pats))))))]))
 
@@ -312,17 +340,18 @@
 (define *file-cache* (make-hash))
 
 (define (read-grammar infile lang)
-  (let ([verbose *verbose*])
-    (when *verbose* (printf "reading grammar ~a~n" infile))
-    (set! *verbose* #f)
+  (let ([verbose *verbose*]
+        [verbosep *verbosep*])
+    (when (or *verbose* *verbosep*) (printf "reading grammar ~a~n" infile))
+    (set! *verbose* #f) (set! *verbosep* #f)
     (let* ([read-lang (prepare infile)]
            [results (hash-ref *file-cache* infile '())]
            [res (if (null? results) (parse-file infile read-lang (lambda (terms) (set! results (cons terms results)) (expand-term (car terms) read-lang lang))) 
                     (for-each (lambda (terms) (expand-term (car terms) read-lang lang)) results))])
       (hash-set! *file-cache* infile (reverse results))
       
-      (set! *verbose* verbose)
-      (when *verbose* (printf "Done reading grammar ~a~n" infile))
+      (set! *verbose* verbose) (set! *verbosep* verbosep)
+      (when (or *verbose* *verbosep*) (printf "Done reading grammar ~a~n" infile))
       (unless res
         (raise-user-error 'read-grammar "Error reading file ~a" infile)))))
 
@@ -354,10 +383,36 @@
   (let* ([infile (search-file infile)]
          [len (file-size infile)]
          [str (call-with-input-file infile (lambda (in) (bytes->string/latin-1 (read-bytes len in))))]
-         [memo-hash (make-hasheq)])
+         [memo-hash (make-hasheq)]
+         [indent-ls null])
     
     (define (rule-memo sym)
       (hash-ref memo-hash sym (lambda () (let  ([h (make-hash)]) (hash-set! memo-hash sym h) h))))
+    
+    ;;; indentation matching
+    (define (take-indent pos new-pos)
+      #;(when *verbose* (printf "^ ~s~n" (- new-pos pos)))
+      (set! indent-ls (cons (list (- new-pos pos) pos #f) indent-ls)))
+    
+    (define (match-indent pos token)
+      #;(when *verbose*
+          (printf "^= ~s ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
+                  (map (lambda (el) (substring str (max 0 (- (cadr el) 6)) (cadr el))) indent-ls)))
+      (case token 
+        [(SAME)
+         (if (eq? pos (caar indent-ls))
+             (cond [(third (first indent-ls)) #t]
+                   [(string=? (cadar indent-ls) (cadadr indent-ls))
+                    (set! indent-ls 
+                          (cons (list (caar indent-ls) (cadar indent-ls) #t) (cddr indent-ls))) #t]
+                   [else #f]) #f)]
+        [(INDENT)
+         (and (eq? pos (caar indent-ls)) (string-prefix? (cadadr indent-ls) (cadar indent-ls)))]
+        [(DEDENT) 
+         (begin0 
+           (and (eq? pos (caar indent-ls)) (string-prefix? (cadar indent-ls) (cadadr indent-ls)))
+           (set! indent-ls (cons (car indent-ls) (cddr indent-ls)))
+           )]))
     
     (define (must-try-rule? exp ch) 
       (define (try-inner exp ch syms)
@@ -368,14 +423,14 @@
            (char-set-contains? exp ch)]
           
           [(term _ _ _ "Null" (list)) #t]
-          [(term _ _ _ "Name" (list name)) 
-           (let ([exp (any->symbol name)]) 
+          [(term _ _ _ "Name" (list names ...)) 
+           (let ([exp (string-append* (map any->string names))]) 
              (if (member exp syms) #t (try-inner (rule-get exp lang) ch (cons exp syms))))]
           
           [(term _ _ _ "String" (list exp))
            (char=? (string-ref (any->string exp) 0) ch)]
           [(term _ _ _ "+" args) ; concatenation
-           (try-inner (car args) ch syms)]
+           (if (null? args) #t (try-inner (car args) ch syms))]
           [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
            (ormap (lambda (exp) (try-inner exp ch syms)) args)]
           [(term _ _ _ "!" (list arg)) ; not
@@ -403,9 +458,9 @@
       (if *verbose* 
           (let* ([exp-str (format "~a" exp)]
                  [formatted-exp (if (> (string-length exp-str) 60) (string-append (string-take exp-str 60) " ...") exp-str)])
-            (printf "'~a'@~a~a~a~n" (and (< pos len) (string-ref str pos)) pos (s-e-cnt-up) formatted-exp)
+            (printf "'~a'@~a~a~a~n" (and (< pos len) (string-ref str pos)) pos (syn-indent-cnt-up) formatted-exp)
             (let-values ([(new-pos taken) (parse-inner exp pos path-ls)])
-              (printf "-> @~a~a~a : ~a~n" new-pos (s-e-cnt-dn) taken formatted-exp)
+              (printf "-> @~a~a~a : ~a~n" new-pos (syn-indent-cnt-dn) taken formatted-exp)
               (values new-pos taken)))
           (parse-inner exp pos path-ls)))
     
@@ -417,8 +472,8 @@
          (values (if (and (< pos len) (char-set-contains? exp (string-ref str pos))) (+ pos 1) #f) null)]
         
         [(term _ _ _ "Null" (list)) (values pos null)]
-        [(term _ _ _ "Name" (list name)) 
-         (let* ([exp (any->symbol name)]
+        [(term _ _ _ "Name" (list names ...)) 
+         (let* ([exp (string-append* (map any->string names))]
                 [rule (rule-get exp lang)]
                 [memo (hash-ref (rule-memo exp) pos #f)])
            (if memo
@@ -513,6 +568,12 @@
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (unless new-pos (eprintf (make-errormessage (string-append* (map (match-lambda [(term _ _ _ "String" (list exp)) (any->string exp)]) mess)) infile pos new-pos)))
            (values new-pos taken))]
+        [(term _ _ _ "^" (list arg)) ; take indentation whitespace
+         (let-values ([(new-pos taken) (parse arg pos path-ls)])
+           (when new-pos (take-indent pos new-pos))
+           (values new-pos null))]
+        [(term _ _ _ "^=" (list arg)) ; match indentation token
+         (values (if (match-indent pos arg) pos #f) null)]
         
         [_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
     (with-handlers ([exn:fail:filesystem? 
@@ -546,6 +607,9 @@
 (define *verbose* #f)
 (define (verbose-mode v) (set! *verbose* v))
 
+(define *verbosep* #f)
+(define (verbosep-mode v) (set! *verbosep* v))
+
 (define *print-init* #f)
 (define (print-init-mode v) (set! *print-init* v))
 
@@ -554,6 +618,8 @@
                                (once-each
                                 [("-v" "--verbose") "Print verbose messages"
                                                     (verbose-mode #t)]
+                                [("-p" "--pattern") "Print pattern expansion messages"
+                                                    (verbosep-mode #t)]
                                 [("-i" "--initial") "Print initial language"
                                                     (print-init-mode #t)])                               
                                (args filenames ; expects names of files to as last command-line arguments

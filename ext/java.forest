@@ -1,11 +1,11 @@
 
 ; Syntax definition for java lang spec 1.0
 
+(Import "core.patterns.forest")
+(Import "core.rules.forest")
+
 (Import "standard.patterns.forest")
 (Import "standard.rules.forest")
-
-(Import "java.patterns.forest")
-(Import "java.rules.forest")
 
 ; start parsing here
 (Rule Start (+ WhiteSpace CompilationUnit EndOfFile))
