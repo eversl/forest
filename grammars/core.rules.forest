@@ -1,16 +1,16 @@
 ;Defines the patterns needed to read forest.peg.scm
 
-(Insert Sexpr (@ "%*%" (+ "(" WhiteSpace "%*%" (! NameChar) WhiteSpace Sexpr Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "*" (+ "(" WhiteSpace "*" (! NameChar) WhiteSpace Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "tok" (+ "(" WhiteSpace "tok" (! NameChar) WhiteSpace Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "parens" (+ "(" WhiteSpace "parens" (! NameChar) WhiteSpace Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "sym" (+ "(" WhiteSpace "sym" (! NameChar) WhiteSpace Sexpr ")" WhiteSpace)))
+(insert sexpr (@ "%*%" (+ "(" whitespace "%*%" (! namechar) whitespace sexpr sexpr ")" whitespace)))
+(insert sexpr (@ "*" (+ "(" whitespace "*" (! namechar) whitespace sexpr ")" whitespace)))
+(insert sexpr (@ "tok" (+ "(" whitespace "tok" (! namechar) whitespace sexpr ")" whitespace)))
+(insert sexpr (@ "parens" (+ "(" whitespace "parens" (! namechar) whitespace sexpr ")" whitespace)))
+(insert sexpr (@ "sym" (+ "(" whitespace "sym" (! namechar) whitespace sexpr ")" whitespace)))
 
-(Insert Sexpr (@ "?" (+ "(" WhiteSpace "?" WhiteSpace Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "&" (+ "(" WhiteSpace "&" WhiteSpace Sexpr ")" WhiteSpace)))
+(insert sexpr (@ "?" (+ "(" whitespace "?" whitespace sexpr ")" whitespace)))
+(insert sexpr (@ "&" (+ "(" whitespace "&" whitespace sexpr ")" whitespace)))
 
 ; Syntax for term patterns 
              
-(Insert Sexpr (@ "Pattern" (+ "(" WhiteSpace "TermPattern" (! NameChar) WhiteSpace Sexpr Sexpr ")" WhiteSpace)))
-(Insert Sexpr (@ "Term" (+ "[" WhiteSpace Name (/ (+ ":" WhiteSpace Sexprs) ()) "]" WhiteSpace)))
-(Insert Sexpr (@ "Token" (+ "#" WhiteSpace DoubleQuoteChar (< StringChars) DoubleQuoteChar WhiteSpace)))
+(insert sexpr (@ "pattern" (+ "(" whitespace "termpattern" (! namechar) whitespace sexpr sexpr ")" whitespace)))
+(insert sexpr (@ "term" (+ "[" whitespace name (/ (+ ":" whitespace sexprs) ()) "]" whitespace)))
+(insert sexpr (@ "token" (+ "#" whitespace doublequotechar (< stringchars) doublequotechar whitespace)))

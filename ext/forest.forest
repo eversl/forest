@@ -1,63 +1,63 @@
-(Import "core.patterns.forest")
-(Import "core.rules.forest")
+(import "core.patterns.forest")
+(import "core.rules.forest")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; start parsing here
-(Rule Start (+ WhiteSpace Declarations EndOfFile))
+(rule start (+ whitespace declarations endoffile))
 
-(Rule EndOfFile (! AnyChar))
+(rule endoffile (! anychar))
 
-(Rule Declaration (> Sexpr))
-(Rule Declarations (/ (+ Declaration Declarations) ()))
+(rule declaration (> sexpr))
+(rule declarations (/ (+ declaration declarations) ()))
 
-;;;;;;;;;;;;;;;;;;;;; Names
+;;;;;;;;;;;;;;;;;;;;; names
 
-(Rule Name (// (@ "Var" (+ (tok "'") NameLiteral)) 
-               (@ "VarList" (+ (tok "'''") NameLiteral))
-               (@ "Name" NameLiteral)))
-(Rule NameChar (/ LetterChar DigitChar "$" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
-(Rule NameChars (/ (+ NameChar NameChars) ()))
-(Rule NameLiteral (tok (< (+ NameChar NameChars))))
+(rule name (// (@ "Var" (+ (tok "'") nameliteral)) 
+               (@ "VarList" (+ (tok "'''") nameliteral))
+               (@ "name" nameliteral)))
+(rule namechar (/ letterchar digitchar "$" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
+(rule namechars (/ (+ namechar namechars) ()))
+(rule nameliteral (tok (< (+ namechar namechars))))
 
-;;;;;;;;;;;;;;;;;;;;; String and Null
+;;;;;;;;;;;;;;;;;;;;; String and null
 
-(Rule StringChars (/ (+ (! DoubleQuoteChar) AnyChar StringChars) ()))
-(Rule StringLiteral (tok (+ DoubleQuoteChar (< StringChars) DoubleQuoteChar))) 
+(rule stringchars (/ (+ (! doublequotechar) anychar stringchars) ()))
+(rule stringliteral (tok (+ doublequotechar (< stringchars) doublequotechar))) 
 
-(Rule Null (+ (tok "(") (tok ")")))
+(rule null (+ (tok "(") (tok ")")))
 
-;;;;;;;;;;;;;; Whitespace
+;;;;;;;;;;;;;; whitespace
 
-(Rule WhiteSpace (/ (+ (/ WhitespaceChar LineComment) WhiteSpace) ()))
-(Rule CommentChars (/ (+ (! Newline) AnyChar CommentChars) ()))
-(Rule LineComment (+ ";" CommentChars Newline))
-(Rule Newline (/ (+ ReturnChar LinefeedChar) ReturnChar LinefeedChar))
+(rule whitespace (/ (+ (/ whitespacechar linecomment) whitespace) ()))
+(rule commentchars (/ (+ (! newline) anychar commentchars) ()))
+(rule linecomment (+ ";" commentchars newline))
+(rule newline (/ (+ returnchar linefeedchar) returnchar linefeedchar))
 
-;;;;;;;;;;;;;;;;;;;;;;;; Sexpr
+;;;;;;;;;;;;;;;;;;;;;;;; sexpr
 
-(Rule Sexpr (// 
-             Name
-             (@ "String" StringLiteral)
-             (@ "Unexpanded" (parens (+ (sym "Unexpanded") Sexpr)))
-             (@ "SyntaxPattern" (parens (+ (sym "TermPattern") (@ "Unexpanded" Sexpr) (@ "Unexpanded" Sexpr))))
-             (@ "Rule" (parens (+ (sym "Rule") Name Sexpr)))
-             (@ "Insert" (parens (+ (sym "Insert") Name Sexpr)))
-             (@ "NewName" (parens (+ (sym "NewName"))))
-             (@ "Import" (parens (+ (sym "Import") StringLiteral)))
-             (@ "Term" (parens (+ (sym "Term") Name Sexprs)))
+(rule sexpr (// 
+             name
+             (@ "String" stringliteral)
+             (@ "unexpanded" (parens (+ (sym "unexpanded") sexpr)))
+             (@ "syntaxpattern" (parens (+ (sym "pattern") (@ "unexpanded" sexpr) (@ "unexpanded" sexpr))))
+             (@ "rule" (parens (+ (sym "rule") name sexpr)))
+             (@ "insert" (parens (+ (sym "insert") name sexpr)))
+             (@ "newname" (parens (+ (sym "newname"))))
+             (@ "import" (parens (+ (sym "import") stringliteral)))
+             (@ "term" (parens (+ (sym "term") name sexprs)))
              
-             (@ "+" (parens (+ (sym "+") Sexprs)))
-             (@ "//" (parens (+ (sym "//") Sexprs)))
-             (@ "/" (parens (+ (sym "/") Sexprs)))
-             (@ "!" (parens (+ (sym "!") Sexpr)))
-             (@ "<" (parens (+ (sym "<") Sexpr)))
-             (@ "@" (parens (+ (sym "@") Sexpr Sexprs)))
-             (@ ">" (parens (+ (sym ">") Sexpr)))
-             (@ "$" (parens (+ (sym "$") Sexpr Sexprs)))
-             (@ "^" (parens (+ (sym "^") Sexpr Sexprs)))
-             (@ "^=" (parens (+ (sym "^=") Sexpr Sexprs)))
-             (@ "Null" Null)
+             (@ "+" (parens (+ (sym "+") sexprs)))
+             (@ "//" (parens (+ (sym "//") sexprs)))
+             (@ "/" (parens (+ (sym "/") sexprs)))
+             (@ "!" (parens (+ (sym "!") sexpr)))
+             (@ "<" (parens (+ (sym "<") sexpr)))
+             (@ "@" (parens (+ (sym "@") sexpr sexprs)))
+             (@ ">" (parens (+ (sym ">") sexpr)))
+             (@ "$" (parens (+ (sym "$") sexpr sexprs)))
+             (@ "^" (parens (+ (sym "^") sexpr sexprs)))
+             (@ "^=" (parens (+ (sym "^=") sexpr sexprs)))
+             (@ "null" null)
              ))
 
-(Rule Sexprs (/ (+ Sexpr Sexprs) ()))
+(rule sexprs (/ (+ sexpr sexprs) ()))

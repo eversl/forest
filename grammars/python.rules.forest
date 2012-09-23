@@ -1,37 +1,37 @@
 ;Defines the rules needed to read py.forest
 
-(Import "core.patterns.forest")
-(Import "core.rules.forest")
+(import "core.patterns.forest")
+(import "core.rules.forest")
 
-(Insert Sexpr (@ "tok_" (parens (+ (sym "tok_") Sexpr))))
+(insert sexpr (@ "tok_" (parens (+ (sym "tok_") sexpr))))
 
-(Insert Sexpr (@ "parens_" (parens (+ (sym "parens_") Sexpr))))
-(Insert Sexpr (@ "brackets_" (parens (+ (sym "brackets_") Sexpr))))
-(Insert Sexpr (@ "braces_" (parens (+ (sym "braces_") Sexpr))))
+(insert sexpr (@ "parens_" (parens (+ (sym "parens_") sexpr))))
+(insert sexpr (@ "brackets_" (parens (+ (sym "brackets_") sexpr))))
+(insert sexpr (@ "braces_" (parens (+ (sym "braces_") sexpr))))
 
-(Insert Sexpr (@ "list_" (parens (+ (sym "list_") Sexpr))))
-(Insert Sexpr (@ "tr-list_" (parens (+ (sym "tr-list_") Sexpr))))
+(insert sexpr (@ "list_" (parens (+ (sym "list_") sexpr))))
+(insert sexpr (@ "tr-list_" (parens (+ (sym "tr-list_") sexpr))))
 
-(Insert Sexpr (@ "kw_" (parens (+ (sym "kw_") Sexpr))))
+(insert sexpr (@ "kw_" (parens (+ (sym "kw_") sexpr))))
 
-(Insert Sexpr (@ "Py*" (+ (parens (+ (sym "Py*") Sexprs)))))
-(Insert Sexpr (@ "Py*1" (+ (parens (+ (sym "Py*1") Sexprs)))))
+(insert sexpr (@ "Py*" (+ (parens (+ (sym "Py*") sexprs)))))
+(insert sexpr (@ "Py*1" (+ (parens (+ (sym "Py*1") sexprs)))))
 
 ;; to make the PyRules work
-(Insert Sexpr (@ "PyRule" (parens (+ (sym "PyRule") Name Sexpr))))
+(insert sexpr (@ "Pyrule" (parens (+ (sym "Pyrule") name sexpr))))
 
-(Insert Sexpr (@ "Py" (parens (+ (sym "Py") Sexpr))))
+(insert sexpr (@ "Py" (parens (+ (sym "Py") sexpr))))
 
-(Insert Sexpr (@ "Pytok" (parens (+ (sym "Pytok") Sexpr))))
+(insert sexpr (@ "Pytok" (parens (+ (sym "Pytok") sexpr))))
 
-(Insert Sexpr (@ "Pyparens" (parens (+ (sym "Pyparens") Sexpr))))
-(Insert Sexpr (@ "Pybrackets" (parens (+ (sym "Pybrackets") Sexpr))))
-(Insert Sexpr (@ "Pybraces" (parens (+ (sym "Pybraces") Sexpr))))
+(insert sexpr (@ "Pyparens" (parens (+ (sym "Pyparens") sexpr))))
+(insert sexpr (@ "Pybrackets" (parens (+ (sym "Pybrackets") sexpr))))
+(insert sexpr (@ "Pybraces" (parens (+ (sym "Pybraces") sexpr))))
 
-(Insert Sexpr (@ "Pykw" (parens (+ (sym "Pykw") Sexpr))))
+(insert sexpr (@ "Pykw" (parens (+ (sym "Pykw") sexpr))))
 
-(Insert Sexpr (@ "Pyseq" (+ (parens (+ (sym "Pyseq") Sexpr Sexpr)))))
-(Insert Sexpr (@ "Pytr-seq" (+ (parens (+ (sym "Pytr-seq") Sexpr Sexpr)))))
+(insert sexpr (@ "Pyseq" (+ (parens (+ (sym "Pyseq") sexpr sexpr)))))
+(insert sexpr (@ "Pytr-seq" (+ (parens (+ (sym "Pytr-seq") sexpr sexpr)))))
 
-(Insert Sexpr (@ "Pylist" (parens (+ (sym "Pylist") Sexpr))))
-(Insert Sexpr (@ "Pytr-list" (parens (+ (sym "Pytr-list") Sexpr))))
+(insert sexpr (@ "Pylist" (parens (+ (sym "Pylist") sexpr))))
+(insert sexpr (@ "Pytr-list" (parens (+ (sym "Pytr-list") sexpr))))

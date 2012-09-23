@@ -1,101 +1,100 @@
 
 ; Syntax definition for java lang spec 1.0
 
-(Import "core.patterns.forest")
-(Import "core.rules.forest")
+(import "core.patterns.forest")
+(import "core.rules.forest")
 
-(Import "standard.patterns.forest")
-(Import "standard.rules.forest")
+(import "standard.patterns.forest")
+(import "standard.rules.forest")
 
 ; start parsing here
-(Rule Start (+ WhiteSpace CompilationUnit EndOfFile))
-; start = WhiteSpace CompilationUnit EndOfFile
+(rule start (+ whitespace CompilationUnit endoffile))
 
-(Rule CompilationUnit (+ (? (> PackageDeclaration)) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
+(rule CompilationUnit (+ (? (> PackageDeclaration)) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
 
-(Rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
-(TermPattern [language : [string : 'v]] (Unexpanded [Import : 'v]))
+(rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
+(termpattern [language : [string : 'v]] (unexpanded [import : 'v]))
 
-(Rule PackageDeclaration (@$: "package" QualifiedIdentifier semicolon$))
+(rule PackageDeclaration (@$: "package" QualifiedIdentifier semicolon$))
 
-(Rule ImportDeclaration (@$: "import" (? (@: "static")) 
+(rule ImportDeclaration (@$: "import" (? (@: "static")) 
                              (+ QualifiedIdentifier (? (+ dot (@ "all" (tok "*")))))
                              semicolon$))
 
-(Rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
+(rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
 
 
 ;;;;;;;;;;;;;; Class Declaration
 
-(Rule ClassDeclaration (@.$: Modifiers "class" Identifier 
+(rule ClassDeclaration (@.$: Modifiers "class" Identifier 
                              (? (@$: "extends" Type))
                              (? (@$: "implements" (list Type)))
                              ClassBody))
 
-(Rule ClassBody (body-braces$ (* ClassBodyDeclaration)))
+(rule ClassBody (body-braces$ (* ClassBodyDeclaration)))
 
-(Rule ClassBodyDeclaration (// (@ "initializer" (+ (? (@: "static")) Block))
+(rule ClassBodyDeclaration (// (@ "initializer" (+ (? (@: "static")) Block))
                                (@ "method" (+ Modifiers MethodDeclarator))
                                (@ "constructor" (+ Modifiers ConstructorDeclarator))
                                (@ "field" (+ Modifiers Type VariableDeclarators semicolon))
                                semicolon))
 
-(Rule MethodDeclarator (+ Type Identifier FormalParameters (* Dim) (? ThrowsPart) (/ Block semicolon)))
+(rule MethodDeclarator (+ Type Identifier FormalParameters (* Dim) (? ThrowsPart) (/ Block semicolon)))
 
-(Rule ConstructorDeclarator (+ Identifier FormalParameters
+(rule ConstructorDeclarator (+ Identifier FormalParameters
                                (? ThrowsPart) Block))
 
-(Rule ThrowsPart (@$: "throws" (list Type)))
+(rule ThrowsPart (@$: "throws" (list Type)))
 
 
 ;;;;;;;;;;;;;; Interface Declaration
 
-(Rule InterfaceDeclaration (@.$: Modifiers "interface" Identifier (? (@$: "extends" (list Type))) (body-braces$ (* InterfaceBodyDeclaration))))
+(rule InterfaceDeclaration (@.$: Modifiers "interface" Identifier (? (@$: "extends" (list Type))) (body-braces$ (* InterfaceBodyDeclaration))))
 
-(Rule InterfaceBodyDeclaration (// (@ "constant" (+ Modifiers Type (list ConstantDeclarator) semicolon$))
+(rule InterfaceBodyDeclaration (// (@ "constant" (+ Modifiers Type (list ConstantDeclarator) semicolon$))
                                    (@ "method" (+ Modifiers InterfaceMethodDeclarator))
                                    semicolon))
 
-(Rule InterfaceMethodDeclarator (+ Type Identifier FormalParameters (* Dim) (? ThrowsPart) semicolon$))
+(rule InterfaceMethodDeclarator (+ Type Identifier FormalParameters (* Dim) (? ThrowsPart) semicolon$))
 
-(Rule ConstantDeclarator (+ Identifier (* Dim) (tok "=") VariableInitializer))
+(rule ConstantDeclarator (+ Identifier (* Dim) (tok "=") VariableInitializer))
 
 ;;;;;;;;;;;;;; Variable Declaration
 
-(Rule LocalVariableDeclarationStatement (@ "local-var" (+ VariableModifiers Type VariableDeclarators semicolon)))
+(rule LocalVariableDeclarationStatement (@ "local-var" (+ VariableModifiers Type VariableDeclarators semicolon)))
 
-(Rule VariableDeclarators (list VariableDeclarator))
+(rule VariableDeclarators (list VariableDeclarator))
 
-(Rule VariableDeclarator (@ "var-declarator" (+ Identifier (* Dim) 
+(rule VariableDeclarator (@ "var-declarator" (+ Identifier (* Dim) 
                                                 (? (@ "var-init" (+ (tok "=") VariableInitializer))))))
 
-(Rule VariableInitializer (/ ArrayInitializer Expression))
+(rule VariableInitializer (/ ArrayInitializer Expression))
 
-(Rule ArrayInitializer (@ "array-init" (braces$ (? (tr-list VariableInitializer)))))
+(rule ArrayInitializer (@ "array-init" (braces$ (? (tr-list VariableInitializer)))))
 
 
 ;;;;;;;;;;;;;; Formal Parameter
 
-(Rule FormalParameters (@ "formal-params" (parens$ (? (/ (+ (list FormalParameter) (? (+ comma VarArityParameter)))
+(rule FormalParameters (@ "formal-params" (parens$ (? (/ (+ (list FormalParameter) (? (+ comma VarArityParameter)))
                                                          VarArityParameter)))))
 
-(Rule FormalParameter (@ "param" (+ VariableModifiers Type VariableDeclaratorId)))
+(rule FormalParameter (@ "param" (+ VariableModifiers Type VariableDeclaratorId)))
 
-(Rule VarArityParameter (@ "var-param" (+ VariableModifiers Type (tok "...") VariableDeclaratorId)))
+(rule VarArityParameter (@ "var-param" (+ VariableModifiers Type (tok "...") VariableDeclaratorId)))
 
-(Rule VariableModifiers (* (@: "final")))
+(rule VariableModifiers (* (@: "final")))
 
-(Rule VariableDeclaratorId (@ "name" (+ Identifier (* Dim))))
+(rule VariableDeclaratorId (@ "name" (+ Identifier (* Dim))))
 
 
 ;;;;;;;;;;;;;; Statements
 
-(Rule Block (@ "block" (braces$ (* BlockStatement))))
+(rule Block (@ "block" (braces$ (* BlockStatement))))
 
-(Rule BlockStatement  (// LocalVariableDeclarationStatement
+(rule BlockStatement  (// LocalVariableDeclarationStatement
                           Statement))
 
-(Rule Statement (// Block
+(rule Statement (// Block
                     (@$: "if" ParExpression Statement (? (@$: "else" Statement)))
                     (@: "for" (parens (+ (? ForInit) semicolon (? Expression) semicolon (? Expressions))) Statement)
                     (@$: "do" Statement (@$: "while" ParExpression semicolon$))
@@ -112,23 +111,23 @@
                     semicolon))
 
 
-(Rule ForInit (/ (+ VariableModifiers Type VariableDeclarators) 
+(rule ForInit (/ (+ VariableModifiers Type VariableDeclarators) 
                  Expressions))
 
-(Rule CatchClause (@$: "catch" (parens$ FormalParameter) Block))
+(rule CatchClause (@$: "catch" (parens$ FormalParameter) Block))
 
-(Rule Finally (@$: "finally" Block))
+(rule Finally (@$: "finally" Block))
 
-(Rule SwitchBlockStatementGroup (+ SwitchLabel colon (* BlockStatement)))
+(rule SwitchBlockStatementGroup (+ SwitchLabel colon (* BlockStatement)))
 
-(Rule SwitchLabel (/ (@$: "case" Expression)
+(rule SwitchLabel (/ (@$: "case" Expression)
                      (@: "default")))
 
 ;;;;;;;;;;;;;; Expressions
 
-(Rule Expressions (list Expression))
+(rule Expressions (list Expression))
 
-(Rule Expression (/ (@ "add-assign-expr" (+ Expression1 (oper "+=") Expression))
+(rule Expression (/ (@ "add-assign-expr" (+ Expression1 (oper "+=") Expression))
                     (@ "sub-assign-expr" (+ Expression1 (oper "-=") Expression))
                     (@ "mul-assign-expr" (+ Expression1 (oper "*=") Expression))
                     (@ "div-assign-expr" (+ Expression1 (oper "/=") Expression))
@@ -142,68 +141,68 @@
                     (@ "assign-expr" (+ Expression1 (oper "=") Expression))
                     Expression1))
 
-(Rule Expression1 (/ (@ "cond-expr" (+ Expression2 (oper "?") Expression (oper ":") Expression1))
+(rule Expression1 (/ (@ "cond-expr" (+ Expression2 (oper "?") Expression (oper ":") Expression1))
                      Expression2))
 
-(Rule Expression2 (/ (@ "cond-or-expr" (+ Expression2 (oper "||") Expression3))
+(rule Expression2 (/ (@ "cond-or-expr" (+ Expression2 (oper "||") Expression3))
                      Expression3))
 
-(Rule Expression3 (/ (@ "cond-and-expr" (+ Expression3 (oper "&&") Expression4))
+(rule Expression3 (/ (@ "cond-and-expr" (+ Expression3 (oper "&&") Expression4))
                      Expression4))
 
-(Rule Expression4 (/ (@ "ior-expr" (+ Expression4 (oper "|") Expression5))
+(rule Expression4 (/ (@ "ior-expr" (+ Expression4 (oper "|") Expression5))
                      Expression5))
 
-(Rule Expression5 (/ (@ "xor-expr" (+ Expression5 (oper "^") Expression6))
+(rule Expression5 (/ (@ "xor-expr" (+ Expression5 (oper "^") Expression6))
                      Expression6))
 
-(Rule Expression6 (/ (@ "and-expr" (+ Expression6 (oper "&") Expression7))
+(rule Expression6 (/ (@ "and-expr" (+ Expression6 (oper "&") Expression7))
                      Expression7))
 
-(Rule Expression7 (/ (@ "eq-expr" (+ Expression7 (oper "==") Expression8))
+(rule Expression7 (/ (@ "eq-expr" (+ Expression7 (oper "==") Expression8))
                      (@ "neq-expr" (+ Expression7 (oper "!=") Expression8))
                      Expression8))
 
-(Rule Expression8 (/ (@.$: Expression8 "instanceof" Type)
+(rule Expression8 (/ (@.$: Expression8 "instanceof" Type)
                      (@ "less-eq-expr" (+ Expression9 (oper "<=") Expression9))
                      (@ "less-expr" (+ Expression9 (oper "<") Expression9))
                      (@ "greater-eq-expr" (+ Expression9 (oper ">=") Expression9))
                      (@ "greater-expr" (+ Expression9 (oper ">") Expression9))
                      Expression9))
 
-(Rule Expression9 (/ (@ "rrot-expr" (+ Expression9 (oper ">>>") Expression10))
+(rule Expression9 (/ (@ "rrot-expr" (+ Expression9 (oper ">>>") Expression10))
                      (@ "rsh-expr" (+ Expression9 (oper ">>") Expression10))
                      (@ "lsh-expr" (+ Expression9 (oper "<<") Expression10))
                      Expression10))
 
-(Rule Expression10 (/ (@ "add-expr" (+ Expression10 (oper "+") Expression11))
+(rule Expression10 (/ (@ "add-expr" (+ Expression10 (oper "+") Expression11))
                       (@ "sub-expr" (+ Expression10 (oper "-") Expression11))
                       Expression11))
 
-(Rule Expression11 (/ (@ "mul-expr" (+ Expression11 (oper "*") UnaryExpression))
+(rule Expression11 (/ (@ "mul-expr" (+ Expression11 (oper "*") UnaryExpression))
                       (@ "div-expr" (+ Expression11 (oper "/") UnaryExpression))
                       (@ "mod-expr" (+ Expression11 (oper "%") UnaryExpression))
                       UnaryExpression))
 
 ;(def-pattern right-assoc-expr (self next (opname op) ...)
-;    (Rule self (/ (@ opname (+ next op self)) ...
+;    (rule self (/ (@ opname (+ next op self)) ...
 ;                            next))
 
-(Rule UnaryExpression (+ SelectorExpression (* PostfixOp)))
+(rule UnaryExpression (+ SelectorExpression (* PostfixOp)))
 
-(Rule SelectorExpression (+ PrefixExpression (* (/ DimExpr
+(rule SelectorExpression (+ PrefixExpression (* (/ DimExpr
                                                    (+ dot Selector)))))
 
-(Rule Selector (// (+ (kw "this"))
+(rule Selector (// (+ (kw "this"))
                    (+ SuperInvocation)
                    InnerCreator
                    (+ Identifier (? Arguments))))
 
-(Rule PrefixExpression (+ (* PrefixOp) CastExpression))
+(rule PrefixExpression (+ (* PrefixOp) CastExpression))
 
-(Rule CastExpression (/ (@ "cast" (+ (parens Type) UnaryExpression)) Primary))
+(rule CastExpression (/ (@ "cast" (+ (parens Type) UnaryExpression)) Primary))
 
-(Rule Primary (// Literal
+(rule Primary (// Literal
                   ParExpression
                   (@$: "this")
                   SuperInvocation                  
@@ -215,45 +214,45 @@
                                                          (+ (kw "super") Arguments) 
                                                          InnerCreator)))))))
 
-(Rule PrefixOp (/ (@ "inc" (oper "++"))
+(rule PrefixOp (/ (@ "inc" (oper "++"))
                   (@ "dec" (oper "--"))
                   (@ "not" (oper "!"))
                   (@ "inv" (oper "~"))
                   (@ "pos" (oper "+"))
                   (@ "neg" (oper "-"))))
 
-(Rule PostfixOp (/ (@ "inc" (oper "++"))
+(rule PostfixOp (/ (@ "inc" (oper "++"))
                    (@ "dec" (oper "--"))))
 
 
-(Rule ParExpression (@ "par-expr" (parens$ Expression)))  
+(rule ParExpression (@ "par-expr" (parens$ Expression)))  
 
-(Rule Arguments (@ "arguments" (parens$ (? Expressions))))
+(rule Arguments (@ "arguments" (parens$ (? Expressions))))
 
-(Rule SuperInvocation (@$: "super" (/ Arguments (+ dot Identifier (? Arguments)))))
+(rule SuperInvocation (@$: "super" (/ Arguments (+ dot Identifier (? Arguments)))))
 
-(Rule Creator (@$: "new" (/ BasicType CreatedName) (/ ArrayCreatorRest
+(rule Creator (@$: "new" (/ BasicType CreatedName) (/ ArrayCreatorRest
                                                       ClassCreatorRest)))
 
-(Rule ArrayCreatorRest (/ (+ Dim (* Dim) ArrayInitializer)
+(rule ArrayCreatorRest (/ (+ Dim (* Dim) ArrayInitializer)
                           (+ DimExpr (* DimExpr) (* Dim))))
 
-(Rule InnerCreator (+ (kw "new") Identifier ClassCreatorRest))
+(rule InnerCreator (+ (kw "new") Identifier ClassCreatorRest))
 
-(Rule ClassCreatorRest (+ Arguments (? ClassBody)))
+(rule ClassCreatorRest (+ Arguments (? ClassBody)))
 
-(Rule Dim (@ "dim" (brackets ())))
+(rule Dim (@ "dim" (brackets ())))
 
-(Rule DimExpr (@ "dim-expr" (brackets Expression)))
+(rule DimExpr (@ "dim-expr" (brackets Expression)))
 
 ;;;;;;;;;;;;;; Types and Modifiers
 
-(Rule Type (@ "type" (+ (/ BasicType CreatedName) 
+(rule Type (@ "type" (+ (/ BasicType CreatedName) 
                         (* Dim))))
 
-(Rule CreatedName (seq (+ Identifier ) dot))
+(rule CreatedName (seq (+ Identifier ) dot))
 
-(Rule BasicType (// (@: "void")
+(rule BasicType (// (@: "void")
                     (@: "byte")
                     (@: "short")
                     (@: "char")
@@ -263,7 +262,7 @@
                     (@: "double")
                     (@: "boolean")))
 
-(Rule Modifier (// (@: "public")
+(rule Modifier (// (@: "public")
                    (@: "protected")
                    (@: "private")
                    (@: "static")
@@ -275,96 +274,96 @@
                    (@: "volatile")
                    (@: "strictfp")))
 
-(Rule Modifiers (@ "modifiers" (* Modifier)))
+(rule Modifiers (@ "modifiers" (* Modifier)))
 
 
-;;;;;;;;;;;;;; Whitespace and Comments
+;;;;;;;;;;;;;; whitespace and Comments
 
-(Rule WhiteSpace (/ (+ (/ WhitespaceChar LineComment BlockComment) WhiteSpace) ()))
+(rule whitespace (/ (+ (/ whitespaceChar LineComment BlockComment) whitespace) ()))
 
-(Rule LineComment (+ "//" (* (+ (! Newline) AnyChar)) Newline))
+(rule LineComment (+ "//" (* (+ (! Newline) AnyChar)) Newline))
 
-(Rule BlockComment (/ (+ "/*" ($ (+ (* (+ (! "*/") AnyChar)) "*/") "unclosed comment"))))
+(rule BlockComment (/ (+ "/*" ($ (+ (* (+ (! "*/") AnyChar)) "*/") "unclosed comment"))))
 
 ;;;;;;;;;;;;;; Identifiers and Terminals
 
 ; TODO: exclude the keywords from identifiers
-(Rule Identifier (tok (< (+ (! Keyword) (/ LetterChar "_" "$") (* LetterOrDigit)))))
+(rule Identifier (tok (< (+ (! Keyword) (/ LetterChar "_" "$") (* LetterOrDigit)))))
 
-(Rule QualifiedIdentifier (+ Identifier (* (+ dot Identifier))))
+(rule QualifiedIdentifier (+ Identifier (* (+ dot Identifier))))
 
-(Rule LetterOrDigit (/ LetterChar DigitChar "_" "$"))
+(rule LetterOrDigit (/ LetterChar DigitChar "_" "$"))
 
-(Rule OperatorChar (/ "!" "%" "^" "&" "*" "-" "+" "=" "|" "?" "<" ">" ":" "/"))
+(rule OperatorChar (/ "!" "%" "^" "&" "*" "-" "+" "=" "|" "?" "<" ">" ":" "/"))
 
-(Rule dot (tok "."))
+(rule dot (tok "."))
 
-(Rule semicolon (tok ";"))
+(rule semicolon (tok ";"))
 
-(Rule semicolon$ ($ semicolon "';' expected"))
+(rule semicolon$ ($ semicolon "';' expected"))
 
-(Rule comma (tok ","))
+(rule comma (tok ","))
 
-(Rule colon (tok ":"))
+(rule colon (tok ":"))
 
-(Rule EndOfFile (! AnyChar))
+(rule endoffile (! AnyChar))
 
 ;;;;;;;;;;;;;; Literals
 
-(Rule Literal (/ FloatingPointLiteral
+(rule Literal (/ FloatingPointLiteral
                  IntegerLiteral
                  CharacterLiteral
                  StringLiteral
                  BooleanLiteral
                  NullLiteral))
 
-(Rule FloatingPointLiteral (@ "floating-point" (tok (< (/ HexadecimalFloatingPointLiteral DecimalFloatingPointLiteral)))))
+(rule FloatingPointLiteral (@ "floating-point" (tok (< (/ HexadecimalFloatingPointLiteral DecimalFloatingPointLiteral)))))
 
-(Rule HexadecimalFloatingPointLiteral (+ HexSignificand BinaryExponent (? FloatTypeSuffix)))
+(rule HexadecimalFloatingPointLiteral (+ HexSignificand BinaryExponent (? FloatTypeSuffix)))
 
-(Rule HexSignificand (+ HexNumeral (? ".") (? HexDigits)))
+(rule HexSignificand (+ HexNumeral (? ".") (? HexDigits)))
 
-(Rule BinaryExponent (+ (/ "p" "P") SignedInteger))
+(rule BinaryExponent (+ (/ "p" "P") SignedInteger))
 
-(Rule FloatTypeSuffix (/ "f" "F" "d" "D"))
+(rule FloatTypeSuffix (/ "f" "F" "d" "D"))
 
-(Rule DecimalFloatingPointLiteral (/ (+ "." Digits (? ExponentPart) (? FloatTypeSuffix))
+(rule DecimalFloatingPointLiteral (/ (+ "." Digits (? ExponentPart) (? FloatTypeSuffix))
                                      (+ Digits "." (? Digits) (? ExponentPart) (? FloatTypeSuffix))
                                      (+ Digits (? ExponentPart) FloatTypeSuffix)
                                      (+ Digits ExponentPart (? FloatTypeSuffix))))
 
-(Rule ExponentPart (+ (/ "e" "E") SignedInteger))
+(rule ExponentPart (+ (/ "e" "E") SignedInteger))
 
-(Rule SignedInteger (+ (? (/ "+" "-")) Digits))
+(rule SignedInteger (+ (? (/ "+" "-")) Digits))
 
-(Rule IntegerLiteral (@ "integer" (tok (< (/ (+ HexNumeral (? IntegerTypeSuffix))
+(rule IntegerLiteral (@ "integer" (tok (< (/ (+ HexNumeral (? IntegerTypeSuffix))
                                              (+ OctalNumeral (? IntegerTypeSuffix))
                                              (+ DecimalNumeral (? IntegerTypeSuffix)))))))
 
-(Rule HexNumeral (+ (/ "0x" "0X") HexDigits))
+(rule HexNumeral (+ (/ "0x" "0X") HexDigits))
 
-(Rule OctalNumeral (+ "0" (* OctalDigit)))
+(rule OctalNumeral (+ "0" (* OctalDigit)))
 
-(Rule DecimalNumeral Digits)
+(rule DecimalNumeral Digits)
 
-(Rule IntegerTypeSuffix (/ "l" "L"))
+(rule IntegerTypeSuffix (/ "l" "L"))
 
-(Rule OctalDigit (/ "0" "1" "2" "3" "4" "5" "6" "7"))
+(rule OctalDigit (/ "0" "1" "2" "3" "4" "5" "6" "7"))
 
-(Rule HexDigits (+ HexDigitChar (* HexDigitChar)))
+(rule HexDigits (+ HexDigitChar (* HexDigitChar)))
 
-(Rule Digits (+ DigitChar (* DigitChar)))
+(rule Digits (+ DigitChar (* DigitChar)))
 
-(Rule CharacterLiteral (@ "char" (tok (+ SingleQuoteChar (! SingleQuoteChar) (< Character) SingleQuoteChar))))
+(rule CharacterLiteral (@ "char" (tok (+ SingleQuoteChar (! SingleQuoteChar) (< Character) SingleQuoteChar))))
 
-(Rule Character (/ (+ BackslashChar (/ "b" "t" "n" "f" "r" DoubleQuoteChar SingleQuoteChar 'BackslashChar)) 
+(rule Character (/ (+ BackslashChar (/ "b" "t" "n" "f" "r" DoubleQuoteChar SingleQuoteChar 'BackslashChar)) 
                    (+ BackslashChar "u" ($ (+ HexDigitChar HexDigitChar HexDigitChar HexDigitChar) "Illegal unicode escape"))
                    (+ BackslashChar ($ (/ (+ (/ "0" "1" "2" "3") OctalDigit OctalDigit) (+ OctalDigit OctalDigit) OctalDigit) "Illegal octal escape")) 
                    (+ (! ReturnChar) (! LinefeedChar) AsciiChar)))
 
-(Rule StringLiteral (@ "string" (tok (+ DoubleQuoteChar (< (* (+ (! DoubleQuoteChar) Character))) DoubleQuoteChar))))
+(rule StringLiteral (@ "string" (tok (+ DoubleQuoteChar (< (* (+ (! DoubleQuoteChar) Character))) DoubleQuoteChar))))
 
-(Rule BooleanLiteral (/ (@: "true") (@: "false")))
+(rule BooleanLiteral (/ (@: "true") (@: "false")))
 
-(Rule NullLiteral (@: "null"))
+(rule NullLiteral (@: "null"))
 
