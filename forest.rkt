@@ -163,8 +163,9 @@
     
     (rule-put! 'sexpr (mt "//" 
                           (mt "@" (mt "string" "null") (mt "name" "null"))
-                          (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "^") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "^>") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^>") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "^<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
                           (mt "@" (mt "string" "$") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "$") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
                           (mt "@" (mt "string" ">") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" ">") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
                           (mt "@" (mt "string" "@") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "@") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
@@ -203,12 +204,12 @@
     ;;;;;;;; end of initial grammar
     
     (pattern-put! "pattern" (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
-                                            (match-lambda*
-                                              [(list read-lang lang (cons _ repl) (cons _ pat)) 
-                                               (let ([name (term-name pat)])
-                                                 (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
-                                                 (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
-                                                 (mt "name" name))]))) lang)
+                                        (match-lambda*
+                                          [(list read-lang lang (cons _ repl) (cons _ pat)) 
+                                           (let ([name (term-name pat)])
+                                             (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
+                                             (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
+                                             (mt "name" name))]))) lang)
     (pattern-put! "rule" (list (cons (mt "rule" (mt "name" (mt "varlist" "names")) (mt "var" "rule")) 
                                      (match-lambda*
                                        [(list read-lang lang (cons _ rule) (cons _ names)) 
@@ -297,18 +298,18 @@
                                 (let* ([bnd (map (match-lambda [(cons n (list trms ...)) (cons n (map (lambda (t) (expand-term t lang modify-lang)) trms))]
                                                                [(cons n t) (cons n (expand-term t lang modify-lang))]) bnd)]
                                        [res 
-                                       (expand-term (let replace-loop ([repl (cdr [car pats])])
-                                                      (match repl 
-                                                        [(? procedure?) (apply repl lang modify-lang bnd)]
-                                                        [(term _ _ _ "var" (list v)) 
-                                                         (let ([val (assoc v bnd token-equal?) ])
-                                                           (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
-                                                                                                             (token-chars v) (term-name trm)) (token-file v) (token-start-pos v) (token-end-pos v))) 
-                                                               (cdr val)))]
-                                                        [(term l1 l2 l3 n r) (term l1 l2 l3 (replace-loop n) (foldr (match-lambda** [((term _ _ _ "varlist" (list v)) r) 
-                                                                                                                                     (append (cdr (assoc v bnd token-equal?)) r)]
-                                                                                                                                    [(v r) (cons (replace-loop v) r)]) '() r))]
-                                                        [v v])) lang modify-lang)])
+                                        (expand-term (let replace-loop ([repl (cdr [car pats])])
+                                                       (match repl 
+                                                         [(? procedure?) (apply repl lang modify-lang bnd)]
+                                                         [(term _ _ _ "var" (list v)) 
+                                                          (let ([val (assoc v bnd token-equal?) ])
+                                                            (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
+                                                                                                              (token-chars v) (term-name trm)) (token-file v) (token-start-pos v) (token-end-pos v))) 
+                                                                (cdr val)))]
+                                                         [(term l1 l2 l3 n r) (term l1 l2 l3 (replace-loop n) (foldr (match-lambda** [((term _ _ _ "varlist" (list v)) r) 
+                                                                                                                                      (append (cdr (assoc v bnd token-equal?)) r)]
+                                                                                                                                     [(v r) (cons (replace-loop v) r)]) '() r))]
+                                                         [v v])) lang modify-lang)])
                                   (when *verbosep* (printip-dn "Replaced ~a with ~a~n" trm res))
                                   res)) 
                      (pat-loop (cdr pats))))))]))
@@ -384,8 +385,11 @@
          [memo-hash (make-hasheq)]
          [indent-ls null])
     
+    (define (invalidate-caches)
+      (set! memo-hash (make-hasheq)))
+    
     (define (rule-memo sym)
-      (hash-ref memo-hash sym (lambda () (let  ([h (make-hash)]) (hash-set! memo-hash sym h) h))))
+      (hash-ref memo-hash sym (lambda () (let ([h (make-hash)]) (hash-set! memo-hash sym h) h))))
     
     ;;; indentation matching
     (define (take-indent pos new-pos)
@@ -394,23 +398,24 @@
     
     (define (match-indent pos token)
       (when #t #;*verbose*
-          (printf "^= ~s ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
-                  (map (lambda (el) (substring str (max 0 (- (cadr el) 6)) (cadr el))) indent-ls)))
-      (case token 
-        [(SAME)
-         (if (eq? pos (caar indent-ls))
-             (cond [(third (first indent-ls)) #t]
-                   [(string=? (cadar indent-ls) (cadadr indent-ls))
-                    (set! indent-ls 
-                          (cons (list (caar indent-ls) (cadar indent-ls) #t) (cddr indent-ls))) #t]
-                   [else #f]) #f)]
-        [(INDENT)
-         (and (eq? pos (caar indent-ls)) (string-prefix? (cadadr indent-ls) (cadar indent-ls)))]
-        [(DEDENT) 
-         (begin0 
-           (and (eq? pos (caar indent-ls)) (string-prefix? (cadar indent-ls) (cadadr indent-ls)))
-           (set! indent-ls (cons (car indent-ls) (cddr indent-ls)))
-           )]))
+        (printf "^= ~a ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
+                (map (lambda (el) (substring str (max 0 (- (cadr el) 6)) (cadr el))) indent-ls)))
+      (match token 
+        [(term _ _ _ "name" (list label)) (printf "matched ") (case (any->symbol label) [(SAME) (print "SAME")
+                                                                                                (if (eq? pos (caar indent-ls))
+                                                                                                    (cond [(third (first indent-ls)) #t]
+                                                                                                          [(string=? (cadar indent-ls) (cadadr indent-ls))
+                                                                                                           (set! indent-ls 
+                                                                                                                 (cons (list (caar indent-ls) (cadar indent-ls) #t) (cddr indent-ls))) #t]
+                                                                                                          [else #f]) #f)]
+                                                                [(INDENT) (print "INDENT")
+                                                                          (and (eq? pos (caar indent-ls)) (string-prefix? (cadadr indent-ls) (cadar indent-ls)))]
+                                                                [(DEDENT) (print "DEDENT")
+                                                                          (begin0 
+                                                                            (and (eq? pos (caar indent-ls)) (string-prefix? (cadar indent-ls) (cadadr indent-ls)))
+                                                                            (set! indent-ls (cons (car indent-ls) (cddr indent-ls)))
+                                                                            )])]
+        [t (printf "that's weird!! : ~a" t)]))
     
     (define (must-try-rule? exp ch) 
       (define (try-inner exp ch syms)
@@ -445,9 +450,11 @@
            (try-inner arg ch syms)]
           [(term _ _ _ "$" (list-rest arg mess)) ; parsing error : print mess when arg fails
            #t]
-          [(term _ _ _ "^" (list arg)) ; take indentation whitespace
+          [(term _ _ _ "^>" (list arg)) ; indent
            #t]
-          [(term _ _ _ "^=" (list arg)) ; match indentation token
+          [(term _ _ _ "^=" (list arg)) ; same indentation
+           #t]
+          [(term _ _ _ "^<" (list)) ; dedent
            #t]
           
           
@@ -531,7 +538,7 @@
                 [ch (if (< pos len) (string-ref str pos) #f)]
                 [args (hash-ref char-hash ch 
                                 (lambda () (let ([new-args (if ch (filter (lambda (exp) (must-try-rule? exp ch)) args) args)])
-                                             (when *verbose* (printf "filtered choice rule for '~a' : ~a --- ~a~n" ch (cons '/ new-args)(cons '/ args)))
+                                             (when #t #;*verbose* (printf "filtered choice rule for '~a' : ~a --- ~a~n" ch (cons '/ new-args)(cons '/ args)))
                                              (hash-set! char-hash ch new-args)
                                              new-args)))])
            
@@ -570,37 +577,47 @@
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (unless new-pos (eprintf (make-errormessage (string-append* (map (match-lambda [(term _ _ _ "string" (list exp)) (any->string exp)]) mess)) infile pos new-pos)))
            (values new-pos taken))]
-        [(term _ _ _ "^" (list arg)) ; take indentation whitespace
+        [(term _ _ _ "^>" (list arg)) ; take indentation whitespace
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
-           (when new-pos (take-indent pos new-pos))
+           (when new-pos
+             (when #t *verbose* (printf "^> ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
+             (set! indent-ls (cons (list (- new-pos pos) pos) indent-ls)))
            (values new-pos null))]
         [(term _ _ _ "^=" (list arg)) ; match indentation token
-         (values (if (match-indent pos arg) pos #f) null)]
-        
-        [_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
-    (with-handlers ([exn:fail:filesystem? 
-                     (lambda (exn)
-                       (fprintf (current-error-port) "~a~n" (exn-message exn)) #f)]
-                    [exn:fail:user? 
-                     (lambda (exn)
-                       (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)]
-                    #;[exn:fail? 
-                       (lambda (exn)
-                         (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
-      (let*-values ([(current-dir) (current-directory)]
-                    [(_) (current-directory (path-only (simple-form-path infile)))]
-                    [(res taken) (parse (mt "name" "start") 0 null)]
-                    [(_) (current-directory current-dir)])
-        (unless (and (number? res) (= res len))
-          (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))
-                                                                           0 (hash-map v (lambda (k v) (cons k (memo-post v))))))))])
-            (fprintf (current-error-port) (make-errormessage "Could not parse. First char not parsed:" infile pos pos)))
-          
-          #f))))
-  
-  (when *print-init* (hash-for-each (language-rules lang) (lambda (sym value)
-                                                            (printf "(rule-put! '~s ~s lang)~n" sym value))))
-  )
+         (let-values ([(new-pos taken) (parse arg pos path-ls)])
+           (when #t *verbose* (printf "^= ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
+           (values (if (and new-pos (eq? (- new-pos pos) (caar indent-ls)))
+                    new-pos #f) null))]
+[(term _ _ _ "^<" (list)) ; match indentation token
+ (when #t *verbose* (printf "^< ~s -> ~s~n" (caar indent-ls) (caadr indent-ls)))
+ (set! indent-ls (cdr indent-ls))
+ (invalidate-caches)
+ (values pos null)]
+
+[_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
+(with-handlers ([exn:fail:filesystem? 
+                 (lambda (exn)
+                   (fprintf (current-error-port) "~a~n" (exn-message exn)) #f)]
+                [exn:fail:user? 
+                 (lambda (exn)
+                   (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)]
+                #;[exn:fail? 
+                   (lambda (exn)
+                     (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
+  (let*-values ([(current-dir) (current-directory)]
+                [(_) (current-directory (path-only (simple-form-path infile)))]
+                [(res taken) (parse (mt "name" "start") 0 null)]
+                [(_) (current-directory current-dir)])
+    (unless (and (number? res) (= res len))
+      (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))
+                                                                       0 (hash-map v (lambda (k v) (cons k (memo-post v))))))))])
+        (fprintf (current-error-port) (make-errormessage "Could not parse. First char not parsed:" infile pos pos)))
+      
+      #f))))
+
+(when *print-init* (hash-for-each (language-rules lang) (lambda (sym value)
+                                                          (printf "(rule-put! '~s ~s lang)~n" sym value))))
+)
 
 
 

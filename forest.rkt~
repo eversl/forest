@@ -110,7 +110,7 @@
   (match sym 
     [(? string? sym) sym]
     [(? token? sym) (token-chars sym)]
-    [(term _ _ _ "String" (list s)) (any->string s)]
+    [(term _ _ _ "string" (list s)) (any->string s)]
     [else (raise-user-error 'any->string "Cannot use \"~a\" as a string~n" sym)]))
 
 ;;;;;;;;; grammar hash table ;;;;;;;;;;;;;;
@@ -140,80 +140,83 @@
   (let ([lang (make-language lang-num (make-hasheq) (make-hasheq) (make-hasheq))])
     
     ; initial character and charset bindings
-    (rule-put! 'LowerCaseChar   char-set:lower-case  lang)
-    (rule-put! 'UpperCaseChar   char-set:upper-case  lang)
-    (rule-put! 'LetterChar      char-set:letter      lang)
-    (rule-put! 'DigitChar       char-set:digit       lang)
-    (rule-put! 'WhitespaceChar  char-set:whitespace  lang)
-    (rule-put! 'HexDigitChar    char-set:hex-digit   lang)
-    (rule-put! 'BlankChar       char-set:blank       lang)
-    (rule-put! 'AsciiChar       char-set:ascii       lang)
-    (rule-put! 'AnyChar         char-set:full        lang)
+    (rule-put! 'lowercasechar   char-set:lower-case  lang)
+    (rule-put! 'uppercasechar   char-set:upper-case  lang)
+    (rule-put! 'letterchar      char-set:letter      lang)
+    (rule-put! 'digitchar       char-set:digit       lang)
+    (rule-put! 'whitespacechar  char-set:whitespace  lang)
+    (rule-put! 'hexdigitchar    char-set:hex-digit   lang)
+    (rule-put! 'blankchar       char-set:blank       lang)
+    (rule-put! 'asciichar       char-set:ascii       lang)
+    (rule-put! 'anychar         char-set:full        lang)
     
-    (rule-put! 'TabChar         #\tab      lang)
-    (rule-put! 'LinefeedChar    #\linefeed lang)
-    (rule-put! 'ReturnChar      #\return   lang)
-    (rule-put! 'BackslashChar   #\\        lang)
-    (rule-put! 'SingleQuoteChar #\'        lang)
-    (rule-put! 'DoubleQuoteChar #\"        lang)
+    (rule-put! 'tabchar         #\tab      lang)
+    (rule-put! 'linefeedchar    #\linefeed lang)
+    (rule-put! 'returnchar      #\return   lang)
+    (rule-put! 'backslashchar   #\\        lang)
+    (rule-put! 'singlequotechar #\'        lang)
+    (rule-put! 'doublequotechar #\"        lang)
     
     
     
     ;;;;;;; initial grammar auto-generated
     
-    (rule-put! 'Sexpr (mt "//" 
-                          (mt "@" (mt "String" "Null") (mt "Name" "Null"))
-                          (mt "@" (mt "String" "^=") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "^=") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "^") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "^") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "$") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "$") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" ">") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" ">") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "@") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "@") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "<") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "<") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "!") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "!") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "/") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "/") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "//") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "//") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "+") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "+") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "Term") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "Term") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Name") (mt "Name" "Sexprs")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "Import") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "Import") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "StringLiteral")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "NewName") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "NewName") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace"))) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "Insert") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "Insert") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Name") (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "Rule") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "Rule") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Name") (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "SyntaxPattern") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "SyntaxPattern") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr") (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "Unexpanded") (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "+" (mt "+" (mt "String" "Unexpanded") (mt "!" (mt "Name" "NameChar"))) (mt "Name" "WhiteSpace")) (mt "Name" "Sexpr")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))))
-                          (mt "@" (mt "String" "String") (mt "Name" "StringLiteral"))
-                          (mt "Name" "Name")) lang)
-    (rule-put! 'Declarations (mt "/" (mt "+" (mt "Name" "Declaration") (mt "Name" "Declarations")) (mt "Null")) lang)
-    (rule-put! 'StringLiteral (mt "+" (mt "+" (mt "Name" "DoubleQuoteChar") (mt "<" (mt "Name" "StringChars")) (mt "Name" "DoubleQuoteChar")) (mt "Name" "WhiteSpace")) lang)
-    (rule-put! 'Newline (mt "/" (mt "+" (mt "Name" "ReturnChar") (mt "Name" "LinefeedChar")) (mt "Name" "ReturnChar") (mt "Name" "LinefeedChar")) lang)
-    (rule-put! 'StringChars (mt "/" (mt "+" (mt "!" (mt "Name" "DoubleQuoteChar")) (mt "Name" "AnyChar") (mt "Name" "StringChars")) (mt "Null")) lang)
-    (rule-put! 'LineComment (mt "+" (mt "String" ";") (mt "Name" "CommentChars") (mt "Name" "Newline")) lang)
-    (rule-put! 'Start (mt "+" (mt "Name" "WhiteSpace") (mt "Name" "Declarations") (mt "Name" "EndOfFile")) lang)
-    (rule-put! 'EndOfFile (mt "!" (mt "Name" "AnyChar")) lang)
-    (rule-put! 'NameChars (mt "/" (mt "+" (mt "Name" "NameChar") (mt "Name" "NameChars")) (mt "Null")) lang)
-    (rule-put! 'Declaration (mt ">" (mt "Name" "Sexpr")) lang)
-    (rule-put! 'Name (mt "//" (mt "@" (mt "String" "Var") (mt "+" (mt "+" (mt "String" "'") (mt "Name" "WhiteSpace")) (mt "Name" "NameLiteral"))) (mt "@" (mt "String" "VarList") (mt "+" (mt "+" (mt "String" "'''") (mt "Name" "WhiteSpace")) (mt "Name" "NameLiteral"))) (mt "@" (mt "String" "Name") (mt "Name" "NameLiteral"))) lang)
-    (rule-put! 'Null (mt "+" (mt "+" (mt "String" "(") (mt "Name" "WhiteSpace")) (mt "+" (mt "String" ")") (mt "Name" "WhiteSpace"))) lang)
-    (rule-put! 'NameLiteral (mt "+" (mt "<" (mt "+" (mt "Name" "NameChar") (mt "Name" "NameChars"))) (mt "Name" "WhiteSpace")) lang)
-    (rule-put! 'CommentChars (mt "/" (mt "+" (mt "!" (mt "Name" "Newline")) (mt "Name" "AnyChar") (mt "Name" "CommentChars")) (mt "Null")) lang)
-    (rule-put! 'Sexprs (mt "/" (mt "+" (mt "Name" "Sexpr") (mt "Name" "Sexprs")) (mt "Null")) lang)
-    (rule-put! 'NameChar (mt "/" (mt "Name" "LetterChar") (mt "Name" "DigitChar") (mt "String" "$") (mt "String" "+") (mt "String" "<") (mt "String" "=") (mt "String" ">") (mt "String" "^") (mt "String" "`") (mt "String" "|") (mt "String" "~") (mt "String" "_") (mt "String" "!") (mt "String" "%") (mt "String" "&") (mt "String" "*") (mt "String" "-") (mt "String" "+") (mt "String" "?") (mt "String" ":") (mt "String" "/") (mt "String" "@") (mt "String" ".")) lang)
-    (rule-put! 'WhiteSpace (mt "/" (mt "+" (mt "/" (mt "Name" "WhitespaceChar") (mt "Name" "LineComment")) (mt "Name" "WhiteSpace")) (mt "Null")) lang)
+    (rule-put! 'sexpr (mt "//" 
+                          (mt "@" (mt "string" "null") (mt "name" "null"))
+                          (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "^") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "$") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "$") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" ">") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" ">") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "@") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "@") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "!") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "!") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "/") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "/") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "//") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "//") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "+") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "+") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "term") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "term") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "import") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "import") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "stringliteral")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "newname") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "newname") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "insert") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "insert") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "rule") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "rule") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "unexpanded") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "unexpanded") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "pattern") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "syntaxpattern") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                          (mt "@" (mt "string" "string") (mt "name" "stringliteral"))
+                          (mt "name" "name")) lang)
+    (rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
+    (rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
+    (rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
+    (rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
+    (rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
+    (rule-put! 'start(mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
+    (rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
+    (rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
+    (rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
+    (rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
+    (rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
+    (rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
+    (rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
+    (rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
+    (rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
+    (rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang)
     
     
     ;;;;;;;; end of initial grammar
     
-    (pattern-put! "SyntaxPattern" (list (cons (mt "SyntaxPattern" (mt "UnVar" "pat") (mt "UnVar" "repl")) 
-                                              PatternPattern)) lang)
-    (pattern-put! "TermPattern" (list (cons (mt "TermPattern" (mt "Var" "pat") (mt "Var" "repl")) 
-                                            PatternPattern)) lang)
-    (pattern-put! "Rule" (list (cons (mt "Rule" (mt "Name" (mt "VarList" "names")) (mt "Var" "rule")) 
+    (pattern-put! "pattern" (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
+                                            (match-lambda*
+                                              [(list read-lang lang (cons _ repl) (cons _ pat)) 
+                                               (let ([name (term-name pat)])
+                                                 (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
+                                                 (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
+                                                 (mt "name" name))]))) lang)
+    (pattern-put! "rule" (list (cons (mt "rule" (mt "name" (mt "varlist" "names")) (mt "var" "rule")) 
                                      (match-lambda*
                                        [(list read-lang lang (cons _ rule) (cons _ names)) 
-                                        (let ([name (string-append* (map any->string names))]) (rule-put! name rule lang) (mt "Name" name))]))) lang) 
-    (pattern-put! "NewName" (list (cons (mt "NewName") 
+                                        (let ([name (string-append* (map any->string names))]) (rule-put! name rule lang) (mt "name" name))]))) lang) 
+    (pattern-put! "newname" (list (cons (mt "newname") 
                                         (match-lambda*
-                                          [(list read-lang lang) (mt "Name" (symbol->string (gensym)))]))) lang)  
-    (pattern-put! "Import" (list (cons (mt "Import" (mt "Var" "fil")) 
+                                          [(list read-lang lang) (mt "name" (symbol->string (gensym)))]))) lang)  
+    (pattern-put! "import" (list (cons (mt "import" (mt "var" "fil")) 
                                        (match-lambda*
                                          [(list read-lang lang (cons _ fil)) 
                                           (let ([f (any->string fil)])
@@ -222,8 +225,8 @@
                                                 ([exn:fail? (lambda (exn)
                                                               (eprintf (make-errormessage (exn-message exn) (token-file fil) (token-start-pos fil) (token-end-pos fil))))])
                                               (read-grammar f read-lang)))
-                                          (mt "Null")]))) lang)
-    (pattern-put! "Insert" (list (cons (mt "Insert" (mt "Name" (mt "VarList" "names")) (mt "Var" "rule"))  
+                                          (mt "null")]))) lang)
+    (pattern-put! "insert" (list (cons (mt "insert" (mt "name" (mt "varlist" "names")) (mt "var" "rule"))  
                                        (match-lambda*
                                          [(list read-lang lang (cons _ rule) (cons _ names)) 
                                           (let ([name (string-append* (map any->string names))])
@@ -235,20 +238,20 @@
                                                   (rule-put! name (apply mt (term-name term) (lset-union! term-equal? (list rule) (term-vals term))) lang)
                                                   rule)
                                                 (begin (rule-put! name (mt "//" rule) lang) rule)))]))) lang)
-    (pattern-put! "Term" (list (cons (mt "Term" (mt "Var" "var") (mt "VarList" "vals")) 
+    (pattern-put! "term" (list (cons (mt "term" (mt "var" "var") (mt "varlist" "vals")) 
                                      (match-lambda*
                                        [(list read-lang lang (cons _ vals) (cons _ var)) 
                                         (let* ([new-term (term '() '() '() var vals)])
                                           (when *verbosep* (printip "Creating variable term ~a~n" new-term))
                                           new-term)]))
-                               (cons (mt "Term" (mt "Name" (mt "VarList" "names")) (mt "VarList" "vals")) 
+                               (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
                                      (match-lambda*
                                        [(list read-lang lang (cons _ vals) (cons _ names)) 
                                         (let* ([name (string-append* (map any->string names))]
                                                [new-term (term '() '() '() (if (token? name) (token-chars name) name) vals)])
                                           (when *verbosep* (printip "Creating term ~a~n" new-term))
                                           new-term)]))) lang)
-    (pattern-put! "Token" (list (cons (mt "Token" (mt "Var" "chars")) 
+    (pattern-put! "token" (list (cons (mt "token" (mt "var" "chars")) 
                                       (match-lambda*
                                         [(list read-lang lang (cons _ tok)) 
                                          (unless (token? tok) (raise-user-error 'Token "Content of Token term must be a token, found ~a" tok))
@@ -257,17 +260,11 @@
     
     lang))
 
-(define PatternPattern (match-lambda*
-                         [(list read-lang lang (cons _ repl) (cons _ pat)) 
-                          (let ([name (term-name pat)])
-                            (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~n"  (language-name lang) name pat repl))
-                            (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
-                            (mt "Name" name))]))
-
 (define (expand-term trm lang modify-lang)
-  (cond [(not (term? trm)) trm]
+  (cond [(or (token? trm) (string? trm)) trm]
+        [(not (term? trm)) (raise-user-error 'expand-term "called with something other than a term or token: ~s" trm)]
         [(term? (term-name trm)) (when *verbosep* (printip "var-term ~a~n" trm)) trm]
-        [(equal? (term-name trm) "Unexpanded") (car (term-vals trm))]
+        [(equal? (term-name trm) "unexpanded") (car (term-vals trm))]
         [else 
          (let pat-loop ([pats [reverse (pattern-ref (term-name trm) lang)]])
            (if (null? pats) 
@@ -278,18 +275,17 @@
                                            [trm trm])
                             (when *verbosep* (printip-up "Matching ~a on ~a...~n" pattern trm))
                             (let ([res (match pattern 
-                                         [(term _ _ _ "UnVar" (list v)) (cons (cons v trm) bindings)]
-                                         [(term _ _ _ "Var" (list v)) (cons (cons v (expand-term trm lang modify-lang)) bindings)]
-                                         [(term _ _ _ n (list-rest r ... (list (term _ _ _ "VarList" (list v))))) 
+                                         [(term _ _ _ "var" (list v)) (cons (cons v trm) bindings)]
+                                         [(term _ _ _ n (list-rest r ... (list (term _ _ _ "varlist" (list v))))) 
                                           (if (and (term? trm) (>= (length (term-vals trm)) (length r)))
                                               (let* ([b (match n 
-                                                          [(term _ _ _ "Var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                          [(term _ _ _ "var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
                                                           [_ (if (token-equal? (term-name trm) n) bindings #f)])]
                                                      [bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (take (term-vals trm) (length r)))])
-                                                (if bnd (cons (cons v (map (lambda (trm) (expand-term trm lang modify-lang)) (drop (term-vals trm) (length r)))) bnd) #f)) #f)]
+                                                (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
                                          [(term _ _ _ n r) (if (and (term? trm) (eq? (length r) (length (term-vals trm))))
                                                                (let ([b (match n 
-                                                                          [(term _ _ _ "Var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                                          [(term _ _ _ "var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
                                                                           [_ (if (token-equal? (term-name trm) n) bindings #f)])])
                                                                  (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
                                          [(token _ _ _ c) (when *verbosep* (printip "Matching token ~a with ~a~n" pattern trm))
@@ -298,16 +294,18 @@
                               (when *verbosep* (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm))
                               res))])
                  (if bnd (begin (when *verbosep* (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) trm bnd))
-                                (let ([res 
+                                (let* ([bnd (map (match-lambda [(cons n (list trms ...)) (cons n (map (lambda (t) (expand-term t lang modify-lang)) trms))]
+                                                               [(cons n t) (cons n (expand-term t lang modify-lang))]) bnd)]
+                                       [res 
                                        (expand-term (let replace-loop ([repl (cdr [car pats])])
                                                       (match repl 
-                                                        [(? procedure? ) (apply repl lang modify-lang bnd)]
-                                                        [(term _ _ _ (or "Var" "UnVar") (list v)) 
-                                                         (let ([val (assoc v bnd token-equal?)])
+                                                        [(? procedure?) (apply repl lang modify-lang bnd)]
+                                                        [(term _ _ _ "var" (list v)) 
+                                                         (let ([val (assoc v bnd token-equal?) ])
                                                            (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
                                                                                                              (token-chars v) (term-name trm)) (token-file v) (token-start-pos v) (token-end-pos v))) 
                                                                (cdr val)))]
-                                                        [(term l1 l2 l3 n r) (term l1 l2 l3 (replace-loop n) (foldr (match-lambda** [((term _ _ _ "VarList" (list v)) r) 
+                                                        [(term l1 l2 l3 n r) (term l1 l2 l3 (replace-loop n) (foldr (match-lambda** [((term _ _ _ "varlist" (list v)) r) 
                                                                                                                                      (append (cdr (assoc v bnd token-equal?)) r)]
                                                                                                                                     [(v r) (cons (replace-loop v) r)]) '() r))]
                                                         [v v])) lang modify-lang)])
@@ -391,28 +389,29 @@
     
     ;;; indentation matching
     (define (take-indent pos new-pos)
-      #;(when *verbose* (printf "^ ~s~n" (- new-pos pos)))
+      (when #t #;*verbose* (printf "^ ~s~n" (- new-pos pos)))
       (set! indent-ls (cons (list (- new-pos pos) pos #f) indent-ls)))
     
     (define (match-indent pos token)
-      #;(when *verbose*
-          (printf "^= ~s ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
+      (when #t #;*verbose*
+          (printf "^= ~a ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
                   (map (lambda (el) (substring str (max 0 (- (cadr el) 6)) (cadr el))) indent-ls)))
-      (case token 
-        [(SAME)
+      (match token 
+        [(term _ _ _ "name" (list label)) (printf "matched ") (case (any->symbol label) [(SAME) (print "SAME")
          (if (eq? pos (caar indent-ls))
              (cond [(third (first indent-ls)) #t]
                    [(string=? (cadar indent-ls) (cadadr indent-ls))
                     (set! indent-ls 
                           (cons (list (caar indent-ls) (cadar indent-ls) #t) (cddr indent-ls))) #t]
                    [else #f]) #f)]
-        [(INDENT)
+        [(INDENT) (print "INDENT")
          (and (eq? pos (caar indent-ls)) (string-prefix? (cadadr indent-ls) (cadar indent-ls)))]
-        [(DEDENT) 
+        [(DEDENT) (print "DEDENT")
          (begin0 
            (and (eq? pos (caar indent-ls)) (string-prefix? (cadar indent-ls) (cadadr indent-ls)))
            (set! indent-ls (cons (car indent-ls) (cddr indent-ls)))
-           )]))
+           )])]
+        [t (printf "that's weird!! : ~a" t)]))
     
     (define (must-try-rule? exp ch) 
       (define (try-inner exp ch syms)
@@ -422,15 +421,19 @@
           [(? char-set?)
            (char-set-contains? exp ch)]
           
-          [(term _ _ _ "Null" (list)) #t]
-          [(term _ _ _ "Name" (list names ...)) 
+          [(term _ _ _ "null" (list)) #t]
+          [(term _ _ _ "name" (list names ...)) 
            (let ([exp (string-append* (map any->string names))]) 
              (if (member exp syms) #t (try-inner (rule-get exp lang) ch (cons exp syms))))]
           
-          [(term _ _ _ "String" (list exp))
+          [(term _ _ _ "string" (list exp))
            (char=? (string-ref (any->string exp) 0) ch)]
           [(term _ _ _ "+" args) ; concatenation
-           (if (null? args) #t (try-inner (car args) ch syms))]
+           (let skip-not ([args args])
+             (match (car args)
+               [(term _ _ _ "!" (list arg)) (skip-not (cdr args))]
+               [_ (if (null? args) #t (try-inner (car args) ch syms))]
+               ))]
           [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
            (ormap (lambda (exp) (try-inner exp ch syms)) args)]
           [(term _ _ _ "!" (list arg)) ; not
@@ -471,9 +474,9 @@
         [(? char-set?)
          (values (if (and (< pos len) (char-set-contains? exp (string-ref str pos))) (+ pos 1) #f) null)]
         
-        [(term _ _ _ "Null" (list)) (values pos null)]
-        [(term _ _ _ "Name" (list names ...)) 
-         (let* ([exp (string-append* (map any->string names))]
+        [(term _ _ _ "null" (list)) (values pos null)]
+        [(term _ _ _ "name" (list names ...)) 
+         (let* ([exp (string->symbol (string-append* (map any->string names)))]
                 [rule (rule-get exp lang)]
                 [memo (hash-ref (rule-memo exp) pos #f)])
            (if memo
@@ -511,7 +514,7 @@
                            (set-memo-post! memo post)
                            (set-memo-taken! memo taken)
                            (values post taken))))))))]
-        [(term _ _ _ "String" (list exp)) 
+        [(term _ _ _ "string" (list exp)) 
          (let string-loop ([exp (string->list (any->string exp))] [chls pos])
            (if (null? exp) (values chls null) 
                (let-values ([(new-pos taken) (parse (car exp) chls null)])
@@ -552,7 +555,7 @@
            #;(when new-pos (printf "< ~a ~n" (substring str pos new-pos)))
            (let ([res (list (if new-pos (make-token infile pos new-pos (substring str pos new-pos)) #f))])
              (values new-pos res)))]
-        [(or (term _ _ _ "@" (list (term _ _ _ "String" (list name)) arg)) ; gather named term
+        [(or (term _ _ _ "@" (list (term _ _ _ "string" (list name)) arg)) ; gather named term
              (term _ _ _ "@" (list name arg))) 
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (if new-pos
@@ -566,7 +569,7 @@
            (values new-pos taken))]
         [(term _ _ _ "$" (list-rest arg mess)) ; parsing error : print mess when arg fails
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
-           (unless new-pos (eprintf (make-errormessage (string-append* (map (match-lambda [(term _ _ _ "String" (list exp)) (any->string exp)]) mess)) infile pos new-pos)))
+           (unless new-pos (eprintf (make-errormessage (string-append* (map (match-lambda [(term _ _ _ "string" (list exp)) (any->string exp)]) mess)) infile pos new-pos)))
            (values new-pos taken))]
         [(term _ _ _ "^" (list arg)) ; take indentation whitespace
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
@@ -587,7 +590,7 @@
                          (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
       (let*-values ([(current-dir) (current-directory)]
                     [(_) (current-directory (path-only (simple-form-path infile)))]
-                    [(res taken) (parse (mt "Name" "Start") 0 null)]
+                    [(res taken) (parse (mt "name" "start") 0 null)]
                     [(_) (current-directory current-dir)])
         (unless (and (number? res) (= res len))
           (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))

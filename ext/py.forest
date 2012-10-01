@@ -14,11 +14,11 @@
 
 ;single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 ;file_input: (NEWLINE | stmt)* ENDMARKER
-(Pyrule file_input (+ (^ ()) (Py* (// newline (Py stmt))) endoffile))
+(Pyrule file_input (+ (^> ()) (Py* (// SAME (Py stmt))) endoffile))
 ;eval_input: testlist NEWLINE* ENDMARKER
 
 ;decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
-(Pyrule decorator (+ (Pytok "@") (Py dotted_name) (? (Pyparens (? (Py arglist)))) newline))
+(Pyrule decorator (+ (Pytok "@") (Py dotted_name) (? (Pyparens (? (Py arglist)))) SAME))
 ;decorators: decorator+
 (Pyrule decorators (Py*1 (Py decorator)))
 ;decorated: decorators (classdef | funcdef)
@@ -43,7 +43,7 @@
 ;stmt: simple_stmt | compound_stmt
 (Pyrule stmt (// (Py simple_stmt) (Py compound_stmt)))
 ;simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
-(Pyrule simple_stmt (+ (Pytr-seq (Py small_stmt) (tok_ ";")) newline))
+(Pyrule simple_stmt (Pytr-seq (Py small_stmt) (Pytok ";")))
 ;small_stmt: (expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt |
 ;             import_stmt | global_stmt | exec_stmt | assert_stmt)
 (Pyrule small_stmt (// (Py expr_stmt) (Py print_stmt) (Py del_stmt) (Py pass_stmt) (Py flow_stmt) (Py import_stmt) (Py global_stmt) (Py exec_stmt) (Py assert_stmt)))
@@ -105,19 +105,19 @@
 ;compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
 (Pyrule compound_stmt (// (Py if_stmt) (Py while_stmt) (Py for_stmt) (Py try_stmt) (Py with_stmt) (Py funcdef) (Py classdef) (Py decorated)))
 ;if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
-(Pyrule if_stmt (+ (Pykw "if") (Py test) (Py colon) (Py suite) (Py* (Pykw "elif") (Py test) (Py colon) (Py suite)) (?+ (Pykw "else") (Py colon) (Py suite))))
+(Pyrule if_stmt (+ (Pykw "if") (Py test) (Py colon) (Py suite) (Py* SAME (Pykw "elif") (Py test) (Py colon) (Py suite)) (?+ SAME (Pykw "else") (Py colon) (Py suite))))
 ;while_stmt: 'while' test ':' suite ['else' ':' suite]
-(Pyrule while_stmt (+ (Pykw "while") (Py test) (Py colon) (Py suite) (?+ (Pykw "else") (Py colon) (Py suite))))
+(Pyrule while_stmt (+ (Pykw "while") (Py test) (Py colon) (Py suite) (?+ SAME (Pykw "else") (Py colon) (Py suite))))
 ;for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
-(Pyrule for_stmt (+ (Pykw "for") (Py exprlist) (kw "in") (Py testlist) (Py colon) (Py suite) (?+ (Pykw "else") (Py colon) (Py suite))))
+(Pyrule for_stmt (+ (Pykw "for") (Py exprlist) (kw "in") (Py testlist) (Py colon) (Py suite) (?+ SAME (Pykw "else") (Py colon) (Py suite))))
 ;try_stmt: ('try' ':' suite
 ;           ((except_clause ':' suite)+
 ;            ['else' ':' suite]
 ;            ['finally' ':' suite] |
 ;           'finally' ':' suite))
 (Pyrule try_stmt (+ (Pykw "try") (Py colon) (Py suite) 
-                     (// (+ (Py*1 (+ (Py except_clause) (Py colon) (Py suite))) (?+ (Pykw "else") (Py colon) (Py suite)) (?+ (Pykw "finally") (Py colon) (Py suite)))
-                         (+ (Pykw "finally") (Py colon) (Py suite)))))
+                     (// (+ (Py* SAME (Py except_clause) (Py colon) (Py suite)) (?+ SAME (Pykw "else") (Py colon) (Py suite)) (?+ SAME (Pykw "finally") (Py colon) (Py suite)))
+                         (+ SAME (Pykw "finally") (Py colon) (Py suite)))))
 ;with_stmt: 'with' with_item (',' with_item)*  ':' suite
 (Pyrule with_stmt (+ (Pykw "with") (Pylist with_item) (Py colon) (Py suite)))
 ;with_item: test ['as' expr]
@@ -126,7 +126,7 @@
 ;except_clause: 'except' [test [('as' | ',') test]]
 (Pyrule except_clause (+ (Pykw "except") (?+ (Py test) (?+ (// (Pykw "as") (Py comma)) (Py NAME)))))
 ;suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
-(rule suite_ (// simple_stmt_ (+ newline INDENT (seq stmt_ SAME) DEDENT)))
+(Pyrule suite (// (Py simple_stmt) (+ INDENT (Pyseq (Py stmt) SAME) DEDENT)))
 ;
 ;# Backward compatibility cruft to support:
 ;# [ x for x in lambda: True, lambda: False if x() ]
@@ -259,13 +259,11 @@
 
 (rule LineComment (+ "#" (* (+ (! EndOfLine) anychar))))
 
-(rule newline (+ (? LineComment) EndOfLine (*+ whitespace_ (? LineComment) EndOfLine) (^ whitespace_)))
+(rule SAME (+ (? LineComment) EndOfLine (*+ whitespace_ (? LineComment) EndOfLine) (^= whitespace_)))
 
-(rule SAME (^= SAME))
+(rule INDENT (+ (? LineComment) EndOfLine (*+ whitespace_ (? LineComment) EndOfLine) (^> whitespace_)))
 
-(rule INDENT (^= INDENT))
-
-(rule DEDENT (^= DEDENT))
+(rule DEDENT (^< ))
 
 ;;;;;;;;;;;;;; Identifiers and Terminals
 (Pyrule NAME (Py Identifier))

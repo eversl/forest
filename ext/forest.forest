@@ -55,8 +55,9 @@
              (@ "@" (parens (+ (sym "@") sexpr sexprs)))
              (@ ">" (parens (+ (sym ">") sexpr)))
              (@ "$" (parens (+ (sym "$") sexpr sexprs)))
-             (@ "^" (parens (+ (sym "^") sexpr sexprs)))
-             (@ "^=" (parens (+ (sym "^=") sexpr sexprs)))
+             (@ "^>" (parens (+ (sym "^>") sexpr)))
+             (@ "^=" (parens (+ (sym "^=") sexpr)))
+             (@ "^<" (parens (+ (sym "^<"))))
              (@ "null" null)
              ))
 
