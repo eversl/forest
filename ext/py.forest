@@ -38,7 +38,7 @@
 (Pyrule fpdef (// (Py NAME) (Pyparens (Py fplist))))
 
 ;fplist: fpdef (',' fpdef)* [',']
-(Pyrule fplist (+ fpdef (Py* (Py comma) fpdef) (? (Py comma))))
+(Pyrule fplist (+ (Py fpdef) (Py* (Py comma) (Py fpdef)) (? (Py comma))))
 
 ;stmt: simple_stmt | compound_stmt
 (Pyrule stmt (// (Py simple_stmt) (Py compound_stmt)))
@@ -51,7 +51,7 @@
 ;                     ('=' (yield_expr|testlist))*)
 (Pyrule expr_stmt (+ (Py testlist)  (// (+ (Py augassign) (// (Py yield_expr) (Py testlist))) (Py* (Py equals) (// (Py yield_expr) (Py testlist))))))
 ;testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
-(Pyrule testlist_star_expr (tr-seq (// test star_expr) comma))
+(Pyrule testlist_star_expr (Pytr-seq (// (Py test) (Py star_expr)) comma))
 ;augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
 ;            '<<=' | '>>=' | '**=' | '//=')
 (Pyrule augassign (// (Pytok "+=") (Pytok "-=") (Pytok "*=") (Pytok "/=") (Pytok "%=") (Pytok "&=") (Pytok "|=") (Pytok "^=") (Pytok "<<=") (Pytok ">>=") (Pytok "**=") (Pytok "//=")))
@@ -273,6 +273,8 @@
                   (Py IntegerLiteral)))
 
 (Pyrule STRING (Py StringLiteral))
+
+(rule endoffile (! anychar))
 
 (rule letterordigit (/ letterchar digitchar "_"))
 

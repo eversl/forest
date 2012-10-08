@@ -10,6 +10,8 @@
 ; start parsing here
 (rule start (+ whitespace CompilationUnit endoffile))
 
+(rule endoffile (! anychar))
+
 (rule CompilationUnit (+ (? (> PackageDeclaration)) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
 
 (rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
@@ -279,20 +281,22 @@
 
 ;;;;;;;;;;;;;; whitespace and Comments
 
-(rule whitespace (/ (+ (/ whitespaceChar LineComment BlockComment) whitespace) ()))
+(rule whitespace (/ (+ (/ whitespacechar LineComment BlockComment) whitespace) ()))
 
-(rule LineComment (+ "//" (* (+ (! Newline) AnyChar)) Newline))
+(rule LineComment (+ "//" (* (+ (! newline) anychar)) newline))
 
-(rule BlockComment (/ (+ "/*" ($ (+ (* (+ (! "*/") AnyChar)) "*/") "unclosed comment"))))
+(rule BlockComment (/ (+ "/*" ($ (+ (* (+ (! "*/") anychar)) "*/") "unclosed comment"))))
+
+(rule newline (/ (+ returnchar linefeedchar) returnchar linefeedchar))
 
 ;;;;;;;;;;;;;; Identifiers and Terminals
 
 ; TODO: exclude the keywords from identifiers
-(rule Identifier (tok (< (+ (! Keyword) (/ LetterChar "_" "$") (* LetterOrDigit)))))
+(rule Identifier (tok (< (+ (! keyword) (/ letterchar "_" "$") (* letterordigit)))))
 
 (rule QualifiedIdentifier (+ Identifier (* (+ dot Identifier))))
 
-(rule LetterOrDigit (/ LetterChar DigitChar "_" "$"))
+(rule letterordigit (/ letterchar digitchar "_" "$"))
 
 (rule OperatorChar (/ "!" "%" "^" "&" "*" "-" "+" "=" "|" "?" "<" ">" ":" "/"))
 
@@ -306,7 +310,7 @@
 
 (rule colon (tok ":"))
 
-(rule endoffile (! AnyChar))
+(rule endoffile (! anychar))
 
 ;;;;;;;;;;;;;; Literals
 
@@ -350,18 +354,18 @@
 
 (rule OctalDigit (/ "0" "1" "2" "3" "4" "5" "6" "7"))
 
-(rule HexDigits (+ HexDigitChar (* HexDigitChar)))
+(rule HexDigits (+ hexdigitchar (* hexdigitchar)))
 
-(rule Digits (+ DigitChar (* DigitChar)))
+(rule Digits (+ digitchar (* digitchar)))
 
-(rule CharacterLiteral (@ "char" (tok (+ SingleQuoteChar (! SingleQuoteChar) (< Character) SingleQuoteChar))))
+(rule CharacterLiteral (@ "char" (tok (+ singlequotechar (! singlequotechar) (< Character) singlequotechar))))
 
-(rule Character (/ (+ BackslashChar (/ "b" "t" "n" "f" "r" DoubleQuoteChar SingleQuoteChar 'BackslashChar)) 
-                   (+ BackslashChar "u" ($ (+ HexDigitChar HexDigitChar HexDigitChar HexDigitChar) "Illegal unicode escape"))
-                   (+ BackslashChar ($ (/ (+ (/ "0" "1" "2" "3") OctalDigit OctalDigit) (+ OctalDigit OctalDigit) OctalDigit) "Illegal octal escape")) 
-                   (+ (! ReturnChar) (! LinefeedChar) AsciiChar)))
+(rule Character (/ (+ backslashchar (/ "b" "t" "n" "f" "r" doublequotechar singlequotechar backslashchar)) 
+                   (+ backslashchar "u" ($ (+ hexdigitchar hexdigitchar hexdigitchar hexdigitchar) "Illegal unicode escape"))
+                   (+ backslashchar ($ (/ (+ (/ "0" "1" "2" "3") OctalDigit OctalDigit) (+ OctalDigit OctalDigit) OctalDigit) "Illegal octal escape")) 
+                   (+ (! returnchar) (! linefeedchar) asciichar)))
 
-(rule StringLiteral (@ "string" (tok (+ DoubleQuoteChar (< (* (+ (! DoubleQuoteChar) Character))) DoubleQuoteChar))))
+(rule StringLiteral (@ "string" (tok (+ doublequotechar (< (* (+ (! doublequotechar) Character))) doublequotechar))))
 
 (rule BooleanLiteral (/ (@: "true") (@: "false")))
 

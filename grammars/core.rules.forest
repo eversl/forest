@@ -14,3 +14,6 @@
 (insert sexpr (@ "pattern" (+ "(" whitespace "termpattern" (! namechar) whitespace sexpr sexpr ")" whitespace)))
 (insert sexpr (@ "term" (+ "[" whitespace name (/ (+ ":" whitespace sexprs) ()) "]" whitespace)))
 (insert sexpr (@ "token" (+ "#" whitespace doublequotechar (< stringchars) doublequotechar whitespace)))
+
+(rule endoffile (! anychar))
+(rule newline (/ (+ returnchar linefeedchar) returnchar linefeedchar))

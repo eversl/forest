@@ -94,7 +94,7 @@
 
 (define-struct memo ((post #:mutable) (taken #:mutable) (left-rec #:mutable)))
 
-(define-struct language (name patterns rules choices))
+(define-struct language (name (files #:mutable) (patterns #:mutable) (rules #:mutable) (choices #:mutable)))
 
 (define (grown-rec? l1 l2)
   (if (not l1) #f
@@ -131,13 +131,54 @@
   (hash-set! (language-patterns lang) (any->symbol name) lst))
 
 
-;;;;;;;;;;;;;;;
+;;;;;;; initial grammar auto-generated
+(define (load-core-lang lang) 
+  (set-language-files! lang (cons "core" (language-files lang)))
+  
+  (rule-put! 'sexpr (mt "//" 
+                        (mt "@" (mt "string" "null") (mt "name" "null"))
+                        (mt "@" (mt "string" "^>") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^>") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "^<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "$") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "$") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" ">") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" ">") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "@") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "@") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "!") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "!") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "/") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "/") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "//") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "//") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "+") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "+") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "term") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "term") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "import") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "import") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "stringliteral")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "newname") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "newname") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "insert") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "insert") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "rule") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "rule") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "unexpanded") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "unexpanded") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "pattern") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "syntaxpattern") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
+                        (mt "@" (mt "string" "string") (mt "name" "stringliteral"))
+                        (mt "name" "name")) lang)
+  (rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
+  (rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
+  (rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
+  (rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
+  (rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
+  (rule-put! 'start (mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
+  (rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
+  (rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
+  (rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
+  (rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
+  (rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
+  (rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
+  (rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
+  (rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
+  (rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
+  (rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang))
 
 (define lang-num 0)
 ; init
-(define (make-initialized-language)
+(define (make-lang)
   (set! lang-num (+ lang-num 1))
-  (let ([lang (make-language lang-num (make-hasheq) (make-hasheq) (make-hasheq))])
+  (let ([lang (make-language lang-num (list) (make-hasheq) (make-hasheq) (make-hasheq))])
     
     ; initial character and charset bindings
     (rule-put! 'lowercasechar   char-set:lower-case  lang)
@@ -156,52 +197,6 @@
     (rule-put! 'backslashchar   #\\        lang)
     (rule-put! 'singlequotechar #\'        lang)
     (rule-put! 'doublequotechar #\"        lang)
-    
-    
-    
-    ;;;;;;; initial grammar auto-generated
-    
-    (rule-put! 'sexpr (mt "//" 
-                          (mt "@" (mt "string" "null") (mt "name" "null"))
-                          (mt "@" (mt "string" "^>") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^>") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "^<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "$") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "$") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" ">") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" ">") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "@") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "@") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "!") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "!") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "/") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "/") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "//") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "//") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "+") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "+") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "term") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "term") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "import") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "import") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "stringliteral")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "newname") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "newname") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "insert") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "insert") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "rule") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "rule") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "unexpanded") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "unexpanded") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "pattern") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "syntaxpattern") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                          (mt "@" (mt "string" "string") (mt "name" "stringliteral"))
-                          (mt "name" "name")) lang)
-    (rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
-    (rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
-    (rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
-    (rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
-    (rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
-    (rule-put! 'start(mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
-    (rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
-    (rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
-    (rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
-    (rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
-    (rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
-    (rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
-    (rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
-    (rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
-    (rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
-    (rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang)
-    
-    
-    ;;;;;;;; end of initial grammar
     
     (pattern-put! "pattern" (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
                                         (match-lambda*
@@ -318,11 +313,11 @@
 
 ; main helper procedures
 
-(define (prepare infile)
-  (let ([lang (make-initialized-language)]
+(define (get-lang-for-reading infile)
+  (let ([lang (make-lang)]
         [grammar-file (find-grammar-for-ext infile)])
     (if grammar-file 
-        (when (not (eq? #t grammar-file)) (read-grammar grammar-file lang))
+        (if (not (eq? #t grammar-file)) (read-grammar grammar-file lang) (load-core-lang lang))
         (eprintf "No grammar definition found for file ~a~n" infile))
     lang))
 
@@ -336,23 +331,96 @@
           [(cons h _) (build-path *ext-dir* h)]
           [_ #f]))))
 
+(define (prepare-language-choices exp lang) 
+  (define (charset-to-try exp syms)
+    (match exp
+      [(? char?) (char-set exp)]
+      [(? char-set?) exp]
+      
+      [(term _ _ _ "null" (list)) char-set:full]
+      [(term _ _ _ "name" (list names ...)) 
+       (let ([exp (string-append* (map any->string names))]) 
+         (if (member exp syms) char-set:full (charset-to-try (rule-get exp lang) (cons exp syms))))]
+      
+      [(term _ _ _ "string" (list exp)) (char-set (string-ref (any->string exp) 0))]
+      [(term _ _ _ "+" args) ; concatenation
+       (let skip-not ([args args])
+         (match (car args)
+           [(term _ _ _ "!" (list arg)) (skip-not (cdr args))]
+           [_ (if (null? args) char-set:full (charset-to-try (car args) syms))]))] ; go through all args so we will find all choice terms
+      [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
+       (apply char-set-union (map (lambda (exp) (charset-to-try exp syms)) args))]
+      [(term _ _ _ "!" (list arg)) ; not
+       char-set:full]
+      [(term _ _ _ "<" (list arg)) ; capture literal
+       (charset-to-try arg syms)]
+      [(term _ _ _ "@" (list name arg)) ; gather named term
+       (charset-to-try arg syms)]
+      [(term _ _ _ ">" (list arg)) ; output
+       (charset-to-try arg syms)]
+      [(term _ _ _ "$" (list-rest arg mess)) ; parsing error : print mess when arg fails
+       char-set:full]
+      [(term _ _ _ "^>" (list arg)) ; indent
+       (charset-to-try arg syms)]
+      [(term _ _ _ "^=" (list arg)) ; same indentation
+       (charset-to-try arg syms)]
+      [(term _ _ _ "^<" (list)) ; dedent
+       char-set:full]          
+      
+      [(term _ _ _ name (list arg)) ; anything else
+       (raise-user-error 'parse "Term \"~a\" is not a valid parser action. Perhaps a Pattern of that name is not defined correctly in imported grammars.~nExpression was \"~a\"~n" name exp)]
+      [_ (raise-user-error 'parse "Unknown or illegal parser action \"~a\"~n This error should never be reported. (You found a bug!)~n" exp)]))
+  
+  (define (prepare-loop exp syms)
+    (match exp
+      [(term _ _ _ "name" (list names ...)) 
+       (let ([name (string-append* (map any->string names))]) 
+         (if (member name syms) syms (prepare-loop (rule-get name lang) (cons name syms))))]      
+      [(term _ _ _ "+" args) ; concatenation
+       (foldr (lambda (exp syms) (prepare-loop exp syms)) syms args)] ; go through all args so we will find all choice terms
+      [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
+       (foldr (lambda (exp syms) 
+                (hash-set! (language-choices lang) exp (charset-to-try exp null))
+                (prepare-loop exp syms)) syms args)]
+      [(or (term _ _ _ "<" (list arg)) (term _ _ _ "@" (list _ arg)) (term _ _ _ ">" (list arg)) 
+           (term _ _ _ "$" (list-rest arg _)) (term _ _ _ "^>" (list arg)) (term _ _ _ "^=" (list arg)))
+       (prepare-loop arg syms)]          
+      
+      [_ syms]))
+  
+  (prepare-loop exp null))
+
+(define *lang-cache* (make-hash))
+
 (define *file-cache* (make-hash))
 
-(define (read-grammar infile lang)
-  (let ([verbose *verbose*]
-        [verbosep *verbosep*])
-    (when (or *verbose* *verbosep*) (printf "reading grammar ~a~n" infile))
-    (set! *verbose* #f) (set! *verbosep* #f)
-    (let* ([read-lang (prepare infile)]
-           [results (hash-ref *file-cache* infile '())]
-           [res (if (null? results) (parse-file infile read-lang (lambda (terms) (set! results (cons terms results)) (expand-term (car terms) read-lang lang))) 
-                    (for-each (lambda (terms) (expand-term (car terms) read-lang lang)) results))])
-      (hash-set! *file-cache* infile (reverse results))
-      
-      (set! *verbose* verbose) (set! *verbosep* verbosep)
-      (when (or *verbose* *verbosep*) (printf "Done reading grammar ~a~n" infile))
-      (unless res
-        (raise-user-error 'read-grammar "Error reading file ~a" infile)))))
+(define (read-grammar infile modify-lang)
+  (when (or *verbose* *verbosep*) (printf "reading grammar ~a~n" infile))          
+  (let* ([files (cons infile (language-files modify-lang))]
+         [cached-lang (hash-ref *lang-cache* files #f)])
+    (if cached-lang (begin (set-language-files! modify-lang files)
+                           (set-language-patterns! modify-lang (hash-copy (language-patterns cached-lang)))
+                           (set-language-rules! modify-lang (hash-copy (language-rules cached-lang)))
+                           (set-language-choices! modify-lang (hash-copy (language-choices cached-lang)))) 
+        (let ([verbose *verbose*]
+              [verbosep *verbosep*])
+          (set! *verbose* #f) (set! *verbosep* #f)
+          (let* ([read-lang (get-lang-for-reading infile)]
+                 [results (hash-ref *file-cache* infile '())]
+                 [res (if (null? results) (begin0 (parse-file infile read-lang (lambda (terms) (set! results (cons terms results)) (expand-term (car terms) read-lang modify-lang)))
+                                                  (hash-set! *file-cache* infile (reverse results)))
+                          (for-each (lambda (terms) (expand-term (car terms) read-lang modify-lang)) results))])
+            (set! *verbose* verbose) (set! *verbosep* verbosep)
+            (unless res
+              (raise-user-error 'read-grammar "Error reading file ~a" infile))
+            (set-language-files! modify-lang files)
+            (set! lang-num (+ lang-num 1))
+            (hash-set! *lang-cache* files (make-language lang-num files 
+                                                           (hash-copy (language-patterns modify-lang)) 
+                                                           (hash-copy (language-rules modify-lang)) 
+                                                           (hash-copy (language-choices modify-lang))))
+            (prepare-language-choices (mt "name" "start") modify-lang))))
+    (when (or *verbose* *verbosep*) (printf "Done reading grammar ~a: ~a ~n" infile (language-files modify-lang)))))
 
 (define *grammar-paths* (list (current-directory) (build-path (current-directory) "grammars")))
 
@@ -390,78 +458,6 @@
     
     (define (rule-memo sym)
       (hash-ref memo-hash sym (lambda () (let ([h (make-hash)]) (hash-set! memo-hash sym h) h))))
-    
-    ;;; indentation matching
-    (define (take-indent pos new-pos)
-      (when #t #;*verbose* (printf "^ ~s~n" (- new-pos pos)))
-      (set! indent-ls (cons (list (- new-pos pos) pos #f) indent-ls)))
-    
-    (define (match-indent pos token)
-      (when #t #;*verbose*
-        (printf "^= ~a ~s: ~s " token (substring str (max 0 (- pos 6)) pos) 
-                (map (lambda (el) (substring str (max 0 (- (cadr el) 6)) (cadr el))) indent-ls)))
-      (match token 
-        [(term _ _ _ "name" (list label)) (printf "matched ") (case (any->symbol label) [(SAME) (print "SAME")
-                                                                                                (if (eq? pos (caar indent-ls))
-                                                                                                    (cond [(third (first indent-ls)) #t]
-                                                                                                          [(string=? (cadar indent-ls) (cadadr indent-ls))
-                                                                                                           (set! indent-ls 
-                                                                                                                 (cons (list (caar indent-ls) (cadar indent-ls) #t) (cddr indent-ls))) #t]
-                                                                                                          [else #f]) #f)]
-                                                                [(INDENT) (print "INDENT")
-                                                                          (and (eq? pos (caar indent-ls)) (string-prefix? (cadadr indent-ls) (cadar indent-ls)))]
-                                                                [(DEDENT) (print "DEDENT")
-                                                                          (begin0 
-                                                                            (and (eq? pos (caar indent-ls)) (string-prefix? (cadar indent-ls) (cadadr indent-ls)))
-                                                                            (set! indent-ls (cons (car indent-ls) (cddr indent-ls)))
-                                                                            )])]
-        [t (printf "that's weird!! : ~a" t)]))
-    
-    (define (must-try-rule? exp ch) 
-      (define (try-inner exp ch syms)
-        (match exp
-          [(? char?)
-           (char=? exp ch)]
-          [(? char-set?)
-           (char-set-contains? exp ch)]
-          
-          [(term _ _ _ "null" (list)) #t]
-          [(term _ _ _ "name" (list names ...)) 
-           (let ([exp (string-append* (map any->string names))]) 
-             (if (member exp syms) #t (try-inner (rule-get exp lang) ch (cons exp syms))))]
-          
-          [(term _ _ _ "string" (list exp))
-           (char=? (string-ref (any->string exp) 0) ch)]
-          [(term _ _ _ "+" args) ; concatenation
-           (let skip-not ([args args])
-             (match (car args)
-               [(term _ _ _ "!" (list arg)) (skip-not (cdr args))]
-               [_ (if (null? args) #t (try-inner (car args) ch syms))]
-               ))]
-          [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
-           (ormap (lambda (exp) (try-inner exp ch syms)) args)]
-          [(term _ _ _ "!" (list arg)) ; not
-           #t]
-          [(term _ _ _ "<" (list arg)) ; capture literal
-           (try-inner arg ch syms)]
-          [(term _ _ _ "@" (list name arg)) ; gather named term
-           (try-inner arg ch syms)]
-          [(term _ _ _ ">" (list arg)) ; output
-           (try-inner arg ch syms)]
-          [(term _ _ _ "$" (list-rest arg mess)) ; parsing error : print mess when arg fails
-           #t]
-          [(term _ _ _ "^>" (list arg)) ; indent
-           #t]
-          [(term _ _ _ "^=" (list arg)) ; same indentation
-           #t]
-          [(term _ _ _ "^<" (list)) ; dedent
-           #t]
-          
-          
-          [(term _ _ _ name (list arg)) ; match indentation token
-           (raise-user-error 'parse "Term \"~a\" is not a valid parser action. Perhaps a Pattern of that name is not defined correctly in imported grammars.~nExpression was \"~a\"~n" name exp)]
-          [_ (raise-user-error 'parse "Unknown or illegal parser action \"~a\"~n This error should never be reported. (You found a bug!)~n" exp)]))
-      (try-inner exp ch null))
     
     (define (parse exp pos path-ls)
       (if *verbose* 
@@ -533,15 +529,7 @@
                      (concat-loop (cdr args) new-pos (append-reverse taken term))
                      (values #f null)))))]
         [(or (term _ _ _ "/" args) (term _ _ _ "//" args)) ; choice or parallel choice
-         (let* ([char-hash (hash-ref (language-choices lang) exp (lambda () (let ([new-hash (make-hasheq )])
-                                                                              (hash-set! (language-choices lang) exp new-hash) new-hash)))]
-                [ch (if (< pos len) (string-ref str pos) #f)]
-                [args (hash-ref char-hash ch 
-                                (lambda () (let ([new-args (if ch (filter (lambda (exp) (must-try-rule? exp ch)) args) args)])
-                                             (when #t #;*verbose* (printf "filtered choice rule for '~a' : ~a --- ~a~n" ch (cons '/ new-args)(cons '/ args)))
-                                             (hash-set! char-hash ch new-args)
-                                             new-args)))])
-           
+         (let ([args (if (< pos len) (filter (lambda exp (char-set-contains? (hash-ref (language-choices lang) exp char-set:full) (string-ref str pos))) args) args)])
            (let choice-loop ([args args])
              (if (null? args) (values #f null)
                  (let-values ([(new-pos taken) (parse (car args) pos path-ls)])
@@ -580,44 +568,44 @@
         [(term _ _ _ "^>" (list arg)) ; take indentation whitespace
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
            (when new-pos
-             (when #t *verbose* (printf "^> ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
+             (when *verbose* (printf "^> ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
              (set! indent-ls (cons (list (- new-pos pos) pos) indent-ls)))
            (values new-pos null))]
         [(term _ _ _ "^=" (list arg)) ; match indentation token
          (let-values ([(new-pos taken) (parse arg pos path-ls)])
-           (when #t *verbose* (printf "^= ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
+           (when *verbose* (printf "^= ~s : ~s ~s~n" (- new-pos pos) (substring str pos new-pos) (map car indent-ls)))
            (values (if (and new-pos (eq? (- new-pos pos) (caar indent-ls)))
-                    new-pos #f) null))]
-[(term _ _ _ "^<" (list)) ; match indentation token
- (when #t *verbose* (printf "^< ~s -> ~s~n" (caar indent-ls) (caadr indent-ls)))
- (set! indent-ls (cdr indent-ls))
- (invalidate-caches)
- (values pos null)]
-
-[_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
-(with-handlers ([exn:fail:filesystem? 
-                 (lambda (exn)
-                   (fprintf (current-error-port) "~a~n" (exn-message exn)) #f)]
-                [exn:fail:user? 
-                 (lambda (exn)
-                   (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)]
-                #;[exn:fail? 
-                   (lambda (exn)
-                     (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
-  (let*-values ([(current-dir) (current-directory)]
-                [(_) (current-directory (path-only (simple-form-path infile)))]
-                [(res taken) (parse (mt "name" "start") 0 null)]
-                [(_) (current-directory current-dir)])
-    (unless (and (number? res) (= res len))
-      (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))
-                                                                       0 (hash-map v (lambda (k v) (cons k (memo-post v))))))))])
-        (fprintf (current-error-port) (make-errormessage "Could not parse. First char not parsed:" infile pos pos)))
-      
-      #f))))
-
-(when *print-init* (hash-for-each (language-rules lang) (lambda (sym value)
-                                                          (printf "(rule-put! '~s ~s lang)~n" sym value))))
-)
+                       new-pos #f) null))]
+        [(term _ _ _ "^<" (list)) ; match indentation token
+         (when *verbose* (printf "^< ~s -> ~s~n" (caar indent-ls) (caadr indent-ls)))
+         (set! indent-ls (cdr indent-ls))
+         (invalidate-caches)
+         (values pos null)]
+        
+        [_ (raise-user-error 'parse "unknown or illegal parser action \"~s\"~n" exp)]))
+    (with-handlers ([exn:fail:filesystem? 
+                     (lambda (exn)
+                       (fprintf (current-error-port) "~a~n" (exn-message exn)) #f)]
+                    [exn:fail:user? 
+                     (lambda (exn)
+                       (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)]
+                    #;[exn:fail? 
+                       (lambda (exn)
+                         (fprintf (current-error-port) "error parsing ~s: ~a~n" infile (exn-message exn)) #f)])
+      (let*-values ([(current-dir) (current-directory)]
+                    [(_) (current-directory (path-only (simple-form-path infile)))]
+                    [(res taken) (parse (mt "name" "start") 0 null)]
+                    [(_) (current-directory current-dir)])
+        (unless (and (number? res) (= res len))
+          (let ([pos (foldl max 0 (hash-map memo-hash (lambda (k v) (foldl (lambda (kv s) (if (cdr kv) (max (cdr kv) s) s))
+                                                                           0 (hash-map v (lambda (k v) (cons k (memo-post v))))))))])
+            (fprintf (current-error-port) (make-errormessage "Could not parse. First char not parsed:" infile pos pos)))
+          
+          #f))))
+  
+  (when *print-init* (hash-for-each (language-rules lang) (lambda (sym value)
+                                                            (printf "(rule-put! '~s ~s lang)~n" sym value))))
+  )
 
 
 
@@ -645,9 +633,9 @@
                                      filenames)) ; return list of filenames to compile
                  ])
     (exit (if (andmap (lambda (infile)
-                        (let ([lang (prepare infile)]
-                              [modify-lang (make-initialized-language)])
-                          (parse-file infile lang (lambda (terms) (printf "> ~a~n" (expand-term (car terms) lang modify-lang))))))
+                        (let ([read-lang (get-lang-for-reading infile)]
+                              [modify-lang (make-lang)])
+                          (parse-file infile read-lang (lambda (terms) (printf "> ~a~n" (expand-term (car terms) read-lang modify-lang))))))
                       infiles) 0 1))))
 
 ; interactive script
