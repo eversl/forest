@@ -286,7 +286,7 @@
                                                                  (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
                                          [(token _ _ _ c) (when *verbosep* (printip "Matching token ~a with ~a~n" pattern trm))
                                                           (if (token-equal? pattern trm) bindings #f)]
-                                         [v (if (eq? v trm) bindings #f)])])
+                                         [v (printf "got into notypeland with ~s!!~n" v) (if (eq? v trm) bindings #f)])])
                               (when *verbosep* (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm))
                               res))])
                  (if bnd (begin (when *verbosep* (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) trm bnd))
@@ -382,7 +382,7 @@
        (foldr (lambda (exp syms) 
                 (hash-set! (language-choices lang) exp (charset-to-try exp null))
                 (prepare-loop exp syms)) syms args)]
-      [(or (term _ _ _ "<" (list arg)) (term _ _ _ "@" (list _ arg)) (term _ _ _ ">" (list arg)) 
+      [(or (term _ _ _ "!" (list arg)) (term _ _ _ "<" (list arg)) (term _ _ _ "@" (list _ arg)) (term _ _ _ ">" (list arg)) 
            (term _ _ _ "$" (list-rest arg _)) (term _ _ _ "^>" (list arg)) (term _ _ _ "^=" (list arg)))
        (prepare-loop arg syms)]          
       
