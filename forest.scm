@@ -5,7 +5,29 @@
         (srfi :69)
         (gnu kawa slib pregexp))
 
-		
+;;;;;;; needed to declare mutually recursive functions for kawa
+;(define-variable read-grammar)
+;(define-variable parse-file)
+
+;;;;;;;;;;;;;;; globals
+
+; print trace of parser
+(define *verbose* #f)
+
+; print trace of paaten expander
+(define *verbosep* #f)
+
+; use grammar cache
+(define *cache* #t)
+
+(define *current-directory* ".")
+
+(define *prepare-char-set* char-set:full)
+
+(define *grammar-paths* (list "." "grammars"))
+
+(define *cache-dir* "cache/")
+
 ;;;;;;;;;; helper functions not in Kawa
 
 (define (printf fmt . args)
@@ -15,7 +37,7 @@
   (display (apply format fmt args)) port)
 
 (define (eprintf fmt . args)
-  (fprintf (current-error-port) fmt args))
+  (apply fprintf (current-error-port) fmt args))
 
 (define (directory-list (dir ::string))
   (let ((arr (java.io.File:list (java.io.File dir))))
@@ -33,19 +55,6 @@
 (define (read-lines in) 
   (let do-read ((line (read-line in 'concat))) 
   (if (eof-object? line) () (cons line (do-read (read-line in 'concat))))))
-
-
-;;;;;;;;;;;;;;; globals
-
-(define *verbose* #f)
-(define (verbose-mode v) (set! *verbose* v))
-
-(define *verbosep* #f)
-(define (verbosep-mode v) (set! *verbosep* v))
-
-(define *current-directory* ".")
-
-(define *prepare-char-set* char-set:ascii)
 
 ;;;;;;;;;;;;;; helper defines to make the verbose output clearer
 
@@ -77,20 +86,6 @@
 (define (printip-dn fmt . args)
   (when *verbosep* (printf "~a~a" (pat-indent-cnt-dn) (apply format fmt args))))
 
-;;;;;;;; forest functions
-
-(define *ext-dir* "ext")
-(define *ext-dir-list* (directory-list *ext-dir*))
-(define (find-grammar-for-ext infile)
-  (let* ((ext (path-extension infile))
-         (lst (filter (lambda (fil) (let ((idx (or (string-index-right fil #\.) 0))) 
-                                      (equal? ext (substring fil (+ (or (string-index-right fil #\. 0 idx) -1) 1) idx)))) 
-                      *ext-dir-list*)))
-    (if (equal? ext "forest") #t 
-        (let ((grammars (filter find-grammar-for-ext lst)))
-          (if (pair? grammars) (string-append *ext-dir* "/" (car grammars)) #f)))))
-
-
 ;;;;;;;;;;;;;; data structure definitions 
 
 (define-record-type term (make-term file start-pos end-pos name vals) term? 
@@ -111,16 +106,16 @@
   (taken memo-taken set-memo-taken!)
   (left-rec memo-left-rec set-memo-left-rec!))
 
-(define-record-type language (make-language name files patterns rules choices) language? 
-  (name language-name set-language-name!)
+(define-record-type language (make-language files patterns rules choices) language? 
   (files language-files set-language-files!)
   (patterns language-patterns set-language-patterns!)
   (rules language-rules set-language-rules!)
   (choices language-choices set-language-choices!))
 
+;;;;;;;;; operations on the data structures
 
 (define (mt name . vals)
-  (make-term '() '() '() name vals))
+  (make-term #f #f #f name vals))
 
 (define (token-equal? fst snd)
   (let ((fst-str (if (token? fst) (token-chars fst) fst))
@@ -134,6 +129,18 @@
            (every term-equal? (term-vals fst) (term-vals snd))) 
       (token-equal? fst snd)))
 
+(define (any->string sym)
+  (cond  
+    ((string? sym) sym)
+    ((token? sym) (token-chars sym))
+    ((and (term? sym) (string=? (term-name sym) "string") (pair? (term-vals sym))) 
+      (any->string (car (term-vals sym))))
+    (else sym)))
+
+(define (any->symbol sym)
+  (if (symbol? sym) sym (string->symbol (any->string sym))))
+
+;;;;;;;;;;;;  formatting functions
 
 (define (format-record t)
   (define (display-record t port)
@@ -156,31 +163,37 @@
       ((string? t) (write t port))
       ((char-set? t) (display "{" port) (char-set-for-each (lambda (c) (write c port) (display " " port)) t) (display "}" port))
       ((pair? t)
-        (define (tr-next ls)
-          (if (pair? ls) (cons (format-record (car ls)) (tr-next (cdr ls)))
+        (define (list-body ls)
+          (if (pair? ls) (cons (format-record (car ls)) (list-body (cdr ls)))
             (if (null? ls) ls (format-record ls))))
-        (display (tr-next t) port))
+        (display (list-body t) port))
       (else (display t port))))
   (call-with-output-string (lambda (port) (display-record t port))))
 
+;;;;;;;;;;;;;; error handling
 
-;;;;;;;;;;;;;;;;;
+(define (make-errormessage message file pos new-pos)
+  (define (find-line lines nline nchar)
+    (if (> nchar (string-length (car lines))) 
+        (find-line (cdr lines) (+ nline 1) (- nchar (string-length (car lines))))
+        (values (car lines) nline nchar)))
+  (if (and file pos new-pos)
+    (let*-values (((infile) (search-file file))
+                  ((lines) (call-with-input-file infile (lambda (in) (read-lines in))))
+                  ((line nline nchar) (find-line lines 1 pos)))
+      (format "~a:~a: ~a~%~a~a~%" infile nline message line (string-append (pregexp-replace* "\\S" (string-take line nchar) " ") "^")))
+    (format "<unknown location>: ~a~%" message)))
 
-(define (grown-rec? l1 l2)
-  (if (not l1) #f
-      (if (not l2) #t
-          (> l1 l2))))
+(define (do-error file pos new-pos message)
+  (eprintf (make-errormessage message file pos new-pos)))
 
-(define (any->string sym)
-  (cond  
-    ((string? sym) sym)
-    ((token? sym) (token-chars sym))
-    ((and (term? sym) (string=? (term-name sym) "string") (pair? (term-vals sym))) 
-      (any->string (car (term-vals sym))))
-    (else sym)))
-
-(define (any->symbol sym)
-  (if (symbol? sym) sym (string->symbol (any->string sym))))
+(define (make-error obj fmt . args)
+  (let ((message (apply format fmt args)))
+    (cond 
+      ((term? obj) (do-error (term-file obj) (term-start-pos obj) (term-end-pos obj) message))
+      ((token? obj) (do-error (token-file obj) (token-start-pos obj) (token-end-pos obj) message))
+      ((list? obj) (do-error (car obj) (cadr obj) (caddr obj) message))
+      (else (do-error #f #f #f message)))))
 
 
 ;;;;;;;;; grammar hash table ;;;;;;;;;;;;;;
@@ -188,7 +201,7 @@
   (hash-table-exists? (language-rules lang) (any->symbol sym)))
 
 (define (rule-get sym lang)
-  (hash-table-ref (language-rules lang) (any->symbol sym) (lambda () (throw 'user-error 'forest "nonterminal \"~s\" not found~%" sym))))
+  (hash-table-ref (language-rules lang) (any->symbol sym) (lambda () (make-error sym "nonterminal ~a not found~%" (format-record sym)) (mt "null"))))
 
 (define (rule-put! sym expr lang)
   (hash-table-set! (language-rules lang) (any->symbol sym) expr))
@@ -200,29 +213,181 @@
 (define (pattern-put! name lst lang)
   (hash-table-set! (language-patterns lang) (any->symbol name) lst))
 
-;;;;;;;;;;;;;; main parsing functions
 
-(define *grammar-paths* (list "." (string-append "." "/" "grammars")))
 
-(define (search-file infile)
-  (if (file-exists? infile) infile  
+;;;;;;;;;;; initial language definitions. must be after the struct definitions
+
+; initial character and charset bindings
+(define *init-rules* (list
+    (cons 'lowercasechar   (char-set-intersection *prepare-char-set* char-set:lower-case))
+    (cons 'uppercasechar   (char-set-intersection *prepare-char-set* char-set:upper-case))
+    (cons 'letterchar      (char-set-intersection *prepare-char-set* char-set:letter)    )
+    (cons 'digitchar       (char-set-intersection *prepare-char-set* char-set:digit)     )
+    (cons 'whitespacechar  (char-set-intersection *prepare-char-set* char-set:whitespace))
+    (cons 'hexdigitchar    (char-set-intersection *prepare-char-set* char-set:hex-digit) )
+    (cons 'blankchar       (char-set-intersection *prepare-char-set* char-set:blank)     )
+    (cons 'asciichar       (char-set-intersection *prepare-char-set* char-set:ascii)     )
+    (cons 'anychar         (char-set-intersection *prepare-char-set* char-set:full)      )
+    
+    (cons 'tabchar         #\tab     )
+    (cons 'linefeedchar    #\linefeed)
+    (cons 'returnchar      #\return  )
+    (cons 'backslashchar   #\\       )
+    (cons 'singlequotechar #\'       )
+    (cons 'doublequotechar #\"       )))
+
+; initial procedure patterns
+(define *init-patterns* (list
+    (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
+      (lambda (real-lang lang repl-arg pat-arg) 
+        (let* ((repl (cdr repl-arg))
+               (pat (cdr pat-arg))
+               (name (term-name pat)))
+          (when *verbosep* (printip "add Pattern to ~a : ~a => ~a~%" name (format-record pat) (format-record repl)))
+          (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
+          (mt "name" name))))))
+    (cons 'rule (list (cons (mt "rule" (mt "name" (mt "varlist" "names")) (mt "var" "rule")) 
+      (lambda (read-lang lang rule-arg names-arg)
+        (let* ((rule (cdr rule-arg))
+               (names (cdr names-arg))
+               (name (apply string-append (map any->string names)))) 
+          (rule-put! name rule lang) 
+          (mt "name" name)))))) 
+    (cons 'newname (list (cons (mt "newname") 
+      (lambda (read-lang lang) 
+        (mt "name" (symbol->string (gensym)))))))  
+    (cons 'import (list (cons (mt "import" (mt "var" "fil")) 
+      (lambda (read-lang lang fil-arg) 
+        (let* ((fil (cdr fil-arg)))
+          (when *verbosep* (printip "Import ~s~%" (any->string fil)))
+          (read-grammar fil read-lang)
+          (mt "null"))))))
+    (cons 'insert (list (cons (mt "insert" (mt "name" (mt "varlist" "names")) (mt "var" "rule"))  
+      (lambda (read-lang lang rule-arg names-arg) 
+        (let* ((rule (cdr rule-arg))
+               (names (cdr names-arg))
+               (name (apply string-append (map any->string names))))
+          (if (rule-exists? name lang) 
+            (let ((term (rule-get name lang)))
+              (if (not (and (term? term) (token-equal? (term-name term) "//")))
+                (make-error rule "insertion in something other than // : ~s -- ~a" name (format-record rule))
+                (begin (when *verbosep* (printip "Insert into ~s : ~a == ~a~%"  name (format-record rule) (format-record term)))
+                  (rule-put! name (apply mt (term-name term) (lset-union term-equal? (list rule) (term-vals term))) lang))))
+            (rule-put! name (mt "//" rule) lang))
+          rule)))))
+    (cons 'term (list 
+      (cons (mt "term" (mt "var" "var") (mt "varlist" "vals")) 
+        (lambda (read-lang lang vals-arg var-arg) 
+          (let* ((vals (cdr vals-arg))
+                 (var (cdr var-arg))
+                 (new-term (make-term '() '() '() var vals)))
+            (when *verbosep* (printip "Creating variable term ~a~%" (format-record new-term)))
+            new-term)))
+      (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
+        (lambda (read-lang lang vals-arg names-arg) 
+          (let* ((vals (cdr vals-arg))
+                 (names (cdr names-arg))
+                 (name (apply string-append (map any->string names)))
+                 (new-term (make-term '() '() '() (if (token? name) (token-chars name) name) vals)))
+            (when *verbosep* (printip "Creating term ~a~%" (format-record new-term)))
+            new-term)))))
+    (cons 'token (list (cons (mt "token" (mt "var" "chars")) 
+      (lambda (read-lang lang tok-arg) 
+        (let ((tok (cdr tok-arg)))
+          (if (token? tok) 
+            (begin 
+              (when *verbosep* (printip "Creating token ~a~%" (format-record tok)))
+              tok) 
+            (begin 
+              (make-error tok "Content of token term must be a token, found ~a" (format-record tok))
+              (make-token '() '() '() "error-token")))
+          tok)))))  ))
+
+;;;;;;;;;;;; write cached languages
+
+(define (write-language t port . prefs)
+  (define (list-body ls)
+        (cond ((pair? ls) (apply write-language (car ls) port (cons "  " prefs)) 
+                 (when (pair? (cdr ls)) (newline port) (display (apply string-append prefs) port))
+                 (list-body (cdr ls)))
+              (else ls)))
+  (define (term-body ls)
+        (cond ((pair? ls) (apply write-language (car ls) port prefs) 
+                 (when (pair? (cdr ls)) (display " " port))
+                 (term-body (cdr ls)))
+              (else ls)))
+  (cond 
+    ((language? t) 
+      (display (format "(make-lang ~s~%" (cons 'list (language-files t))) port)
+      (write-language   
+        (hash-table-fold (language-patterns t) 
+          (lambda (k v a)
+             (let ((ikv (assoc k *init-patterns*)))
+               (if (and ikv (eq? (cdr ikv) v)) a (cons (cons k v) a)))) ()) port "  ")
+      (newline port)
+      (write-language
+        (hash-table-fold (language-rules t) 
+          (lambda (k v a)
+             (let ((ikv (assoc k *init-rules*)))
+               (if (and ikv (eq? (cdr ikv) v)) a (cons (cons k v) a)))) ()) port "  ")
+      (display ")" port))
+    ((term? t)
+      (display "(mt " port)
+      (write (term-name t) port)
+      (display " " port)
+      (term-body (term-vals t))
+      (display ")" port))
+    ((token? t)
+      (write (token-chars t) port))
+    ((string? t) (write t port))
+    ((symbol? t) (display "'" port) (write t port))
+    ((char-set? t) (display "{" port) (char-set-for-each (lambda (c) (write c port) (display " " port)) t) (display "}" port))
+    ((proper-list? t)   
+      (display "(list " port)
+      (list-body t)
+      (display ")" port))
+    ((pair? t) 
+      (display "(cons " port)
+      (write-language (car t) port)  
+      (display " " port)
+      (write-language (cdr t) port)
+      (display ")" port))
+    (else (display t port))))
+  
+
+;;;;;;;; file functions
+
+;; searches the file that is indicated by token tok in source code, 
+;; and returns a string containing the file path. 
+(define (search-file tok)
+  (let ((infile (any->string tok)))
+    (if (file-exists? infile) infile  
       (let ((p (find (lambda (p) (file-exists? (string-append p "/" infile))) *grammar-paths*)))
         (if p (string-append p "/" infile)
-            (throw 'user-error 'search-file "File not found: ~a~%" infile)))))
+            (begin (make-error tok "File not found: ~a~%" (format-record infile)) #f))))))
 
-(define (make-errormessage message file pos new-pos)
-  (define (find-line lines nline nchar)
-    (if (> nchar (string-length (car lines))) 
-        (find-line (cdr lines) (+ nline 1) (- nchar (string-length (car lines))))
-        (values (car lines) nline nchar)))
-  (let*-values (((infile) (search-file file))
-                ((lines) (call-with-input-file infile (lambda (in) (read-lines in))))
-                ((line nline nchar) (find-line lines 1 pos)))
-    (format "~a:~a: ~a~%~a~a~%" infile nline message line (string-append (pregexp-replace "\\S" (string-take line nchar) " ") "^"))))
+(define (file-more-recent (fil1 :: string) (fil2 :: string))
+  (and (file-exists? fil1) (file-exists? fil2) 
+    (> (java.io.File:lastModified (java.io.File fil1)) (java.io.File:lastModified (java.io.File fil2)))))
+
+(define *ext-dir* "ext")
+(define *ext-dir-list* (directory-list *ext-dir*))
+(define (find-grammar-for-ext tok)
+  (let* ((ext (path-extension (any->string tok)))
+         (lst (filter (lambda (fil) (let ((idx (or (string-index-right fil #\.) 0))) 
+                                      (equal? ext (substring fil (+ (or (string-index-right fil #\. 0 idx) -1) 1) idx)))) 
+                      *ext-dir-list*)))
+    (if (member tok lst) tok
+      (let ((grammars (filter find-grammar-for-ext lst)))
+          (if (pair? grammars) (string-append *ext-dir* "/" (car grammars)) #f)))))
+
+
+
+;;;;;;;;;;;;;; main parsing functions
 
 (define (expand-term trm lang modify-lang)
   (cond ((or (token? trm) (string? trm)) trm)
-        ((not (term? trm)) (throw 'user-error 'expand-term "called with something other than a term or token: ~s" trm))
+        ((not (term? trm)) (make-error trm "called with something other than a term or token: ~s" (format-record trm)))
         ((term? (term-name trm)) (when *verbosep* (printip "var-term ~a~%" (format-record trm))) trm)
         ((equal? (term-name trm) "unexpanded") (car (term-vals trm)))
         (else 
@@ -298,7 +463,8 @@
    (if (not (term? exp))
      (cond ((char? exp) (char-set exp))
          ((char-set? exp) exp)
-         (else (throw 'user-error 'parse "Unknown or illegal parser action \"~a\"~% This error should never be reported. (You found a bug!)~%" exp)))
+         (else (make-error exp "Unknown or illegal parser action ~s~% This error should never be reported. (You found a bug!)~%" (format-record exp))
+		 exp))
      (case (string->symbol (term-name exp))
       ((name) 
       (let* ((names (term-vals exp)) 
@@ -326,7 +492,8 @@
        *prepare-char-set*)
       
       (else (let ((name (term-name exp)) (arg (term-vals exp))) ; anything else
-          (throw 'user-error 'parse "Term \"~a\" is not a valid parser action. Perhaps a Pattern of that name is not defined correctly in imported grammars.~%Expression was \"~a\"~%" name exp)))
+          (make-error exp "Term ~s is not a valid parser action. Perhaps a pattern of that name is not defined correctly in imported grammars.~%Expression was \"~a\"~%" 
+            name (format-record exp))))
       )))
   
   (define (prepare-loop exp syms)
@@ -356,124 +523,39 @@
   (prepare-loop exp '()))
 
 
-(define *lang-cache* (make-hash-table))
-
-(define lang-num 0)
-
 (define (read-grammar infile modify-lang)
-  (when (or *verbose* *verbosep*) (printf "reading grammar ~a~%" infile))          
-  (let* ((files (cons infile (language-files modify-lang)))
-         (cached-lang (hash-table-ref/default *lang-cache* files #f)))
-    (printf "cached-lang: ~a (~a)~%" cached-lang files)
-    (if cached-lang (begin (set-language-files! modify-lang files)
-                           (set-language-patterns! modify-lang (hash-table-copy (language-patterns cached-lang)))
-                           (set-language-rules! modify-lang (hash-table-copy (language-rules cached-lang)))
-                           (set-language-choices! modify-lang (hash-table-copy (language-choices cached-lang)))) 
-        (let ((verbose *verbose*)
-              (verbosep *verbosep*))
-          (set! *verbose* #f) (set! *verbosep* #f)
-          (let* ((res (parse-file infile (lambda (read-lang terms) (expand-term (car terms) read-lang modify-lang)))))
-        (set! *verbose* verbose) (set! *verbosep* verbosep)
-            (unless res
-              (throw 'user-error "Error reading file" infile))
-            (set-language-files! modify-lang files)
-            (set! lang-num (+ lang-num 1))
-            (prepare-language-choices (mt "name" "start") modify-lang)
-            (let ((cached-lang (make-language lang-num files 
-                                                           (hash-table-copy (language-patterns modify-lang)) 
-                                                           (hash-table-copy (language-rules modify-lang)) 
-                                                           (hash-table-copy (language-choices modify-lang)))))
-              (hash-table-set! *lang-cache* files cached-lang)))))
+  (when (or *verbose* *verbosep*) (printf "reading grammar ~a~%" (format-record infile)))
+  (let* ((files (cons (any->string infile) (language-files modify-lang)))
+         (cache-file-name (string-append *cache-dir* (string-join (map (lambda (f) (pregexp-replace* "/" f "_")) files) ",") ".scm")))
+    (if (and *cache* (every (lambda (f) (file-more-recent cache-file-name (search-file f))) files))
+        (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (eval (read port)))))) 
+          (set-language-files! modify-lang files)
+          (set-language-patterns! modify-lang (language-patterns cached-lang))
+          (set-language-rules! modify-lang (language-rules cached-lang))
+          (set-language-choices! modify-lang (language-choices cached-lang))) 
+        (fluid-let ((*verbose* #f)
+                    (*verbosep* #f))
+          (parse-file infile (lambda (read-lang terms) (expand-term (car terms) read-lang modify-lang)))
+          (set-language-files! modify-lang files)
+          (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port)))))
+    (prepare-language-choices (mt "name" "start") modify-lang)
+          
     (when (or *verbose* *verbosep*) (printf "Done reading grammar ~a: ~a ~%" infile (language-files modify-lang)))))
 
-; init
-(define (make-lang)
-  (set! lang-num (+ lang-num 1))
-  (let ((lang (make-language lang-num (list) (make-hash-table) (make-hash-table) (make-hash-table))))
+
+(define (make-lang files patterns rules)
+  (let ((lang (make-language files (make-hash-table) (make-hash-table) (make-hash-table))))
     
-    ; initial character and charset bindings
-    (rule-put! 'lowercasechar   (char-set-intersection *prepare-char-set* char-set:lower-case)  lang)
-    (rule-put! 'uppercasechar   (char-set-intersection *prepare-char-set* char-set:upper-case)  lang)
-    (rule-put! 'letterchar      (char-set-intersection *prepare-char-set* char-set:letter)      lang)
-    (rule-put! 'digitchar       (char-set-intersection *prepare-char-set* char-set:digit)       lang)
-    (rule-put! 'whitespacechar  (char-set-intersection *prepare-char-set* char-set:whitespace)  lang)
-    (rule-put! 'hexdigitchar    (char-set-intersection *prepare-char-set* char-set:hex-digit)   lang)
-    (rule-put! 'blankchar       (char-set-intersection *prepare-char-set* char-set:blank)       lang)
-    (rule-put! 'asciichar       (char-set-intersection *prepare-char-set* char-set:ascii)       lang)
-    (rule-put! 'anychar         (char-set-intersection *prepare-char-set* char-set:full)        lang)
+    (for-each (lambda (a) (rule-put! (car a) (cdr a) lang)) *init-rules*)
+    (for-each (lambda (a) (pattern-put! (car a) (cdr a) lang)) *init-patterns*)
     
-    (rule-put! 'tabchar         #\tab      lang)
-    (rule-put! 'linefeedchar    #\linefeed lang)
-    (rule-put! 'returnchar      #\return   lang)
-    (rule-put! 'backslashchar   #\\        lang)
-    (rule-put! 'singlequotechar #\'        lang)
-    (rule-put! 'doublequotechar #\"        lang)
-    
-    (pattern-put! "pattern" (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
-                                        (lambda (real-lang lang repl-arg pat-arg) 
-                                           (let* ((repl (cdr repl-arg))
-                              (pat (cdr pat-arg))
-                          (name (term-name pat)))
-                                             (when *verbosep* (printip "add Pattern to (lang ~a) ~a : ~a => ~a~%"  (language-name lang) name 
-                                               (format-record pat) (format-record repl)))
-                                             (pattern-put! name (cons (cons pat repl) (pattern-ref name lang)) lang)
-                                             (mt "name" name))))) lang)
-    (pattern-put! "rule" (list (cons (mt "rule" (mt "name" (mt "varlist" "names")) (mt "var" "rule")) 
-                                     (lambda (read-lang lang rule-arg names-arg)
-                                       (let* ((rule (cdr rule-arg))
-                            (names (cdr names-arg))
-                        (name (apply string-append (map any->string names)))) 
-                     (rule-put! name rule lang) (mt "name" name))))) lang) 
-    (pattern-put! "newname" (list (cons (mt "newname") 
-                                        (lambda (read-lang lang) 
-                      (mt "name" (symbol->string (gensym)))))) lang)  
-    (pattern-put! "import" (list (cons (mt "import" (mt "var" "fil")) 
-                                       (lambda (read-lang lang fil-arg) 
-                                          (let* ((fil (cdr fil-arg))
-                             (f (any->string fil)))
-                                            (when *verbosep* (printip "Import ~s, ~a ~a~%" f (language-name read-lang) (language-name lang)))
-                                            (catch 'user-error (lambda () (read-grammar f read-lang)) 
-                                              (lambda (exn . args) (eprintf (make-errormessage (format-record args) (token-file fil) (token-start-pos fil) (token-end-pos fil)))))
-                                            (mt "null"))))) lang)
-    (pattern-put! "insert" (list (cons (mt "insert" (mt "name" (mt "varlist" "names")) (mt "var" "rule"))  
-                                       (lambda (read-lang lang rule-arg names-arg) 
-                                          (let* ((rule (cdr rule-arg))
-                                                 (names (cdr names-arg))
-                                                 (name (apply string-append (map any->string names))))
-                                            (if (rule-exists? name lang) 
-                                                (let ((term (rule-get name lang)))
-                                                  (when (not (and (term? term) (token-equal? (term-name term) "//")))
-                                                    (error 'Insert "insertion in something other than // : ~s -- ~s" name rule))
-                                                  (when *verbosep* (printip "Insert into (lang ~a) ~s : ~a == ~a~%"  (language-name lang) name (format-record rule) (format-record term)))
-                                                  (rule-put! name (apply mt (term-name term) (lset-union term-equal? (list rule) (term-vals term))) lang))
-                                                (rule-put! name (mt "//" rule) lang))
-                                            rule)))) lang)
-    (pattern-put! "term" (list (cons (mt "term" (mt "var" "var") (mt "varlist" "vals")) 
-                                     (lambda (read-lang lang vals-arg var-arg) 
-                                        (let* ((vals (cdr vals-arg))
-                                               (var (cdr var-arg))
-                                               (new-term (make-term '() '() '() var vals)))
-                                          (when *verbosep* (printip "Creating variable term ~a~%" (format-record new-term)))
-                                          new-term)))
-                               (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
-                                     (lambda (read-lang lang vals-arg names-arg) 
-                                        (let* ((vals (cdr vals-arg))
-                                               (names (cdr names-arg))
-                                               (name (apply string-append (map any->string names)))
-                                               (new-term (make-term '() '() '() (if (token? name) (token-chars name) name) vals)))
-                                          (when *verbosep* (printip "Creating term ~a~%" (format-record new-term)))
-                                          new-term)))) lang)
-    (pattern-put! "token" (list (cons (mt "token" (mt "var" "chars")) 
-                                      (lambda (read-lang lang tok-arg) 
-                      (let ((tok (cdr tok-arg)))
-                                         (unless (token? tok) (throw 'user-error 'token "Content of token term must be a token, found ~a" tok))
-                                         (when *verbosep* (printip "Creating token ~a~%" (format-record tok)))
-                                         tok)))) lang)
+    (for-each (lambda (a) (rule-put! (car a) (cdr a) lang)) rules)
+    (for-each (lambda (a) (pattern-put! (car a) (cdr a) lang)) patterns)
     lang))
 
 ;;;;;;; initial grammar auto-generated
 (define (load-core-lang lang) 
-  (set-language-files! lang (cons "core" (language-files lang)))
+  (set-language-files! lang (cons "ext/forest.forest" (language-files lang)))
   
   (rule-put! 'sexpr (mt "//" 
                         (mt "@" (mt "string" "null") (mt "name" "null"))
@@ -515,18 +597,26 @@
   (rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang))
 
 (define (get-lang-for-reading infile)
-  (let ((lang (make-lang))
+  (let ((lang (make-lang () () ()))
         (grammar-file (find-grammar-for-ext infile)))
     (if grammar-file 
-        (if (not (eq? #t grammar-file)) (read-grammar grammar-file lang) (load-core-lang lang))
+        (if (not (string=? infile grammar-file)) (read-grammar grammar-file lang) (load-core-lang lang))
         (eprintf "No grammar definition found for file ~a~%" infile))
     lang))
 
+;;;;;;;;;;;;;;;;;
+
+(define (grown-rec? l1 l2)
+  (if (not l1) #f
+      (if (not l2) #t
+          (> l1 l2))))
+
+
 (define (parse-file infile process-term)
   
-  (when *verbose* (printf " parsing ~s ...~%" infile))
-  (let* ((lang (get-lang-for-reading infile))
-         (infile (search-file infile))
+  (when *verbose* (printf " parsing ~s ...~%" (any->string infile)))
+  (let* ((infile (search-file infile))
+         (lang (get-lang-for-reading infile))
          (str (apply string-append (call-with-input-file infile (lambda (in) (read-lines in)))))
          (len (string-length str))
          (memo-hash (make-hash-table))
@@ -553,7 +643,7 @@
        (cond
           ((char? exp) (values (if (and (< pos len) (char=? exp (string-ref str pos))) (+ pos 1) #f) ()))
           ((char-set? exp) (values (if (and (< pos len) (char-set-contains? exp (string-ref str pos))) (+ pos 1) #f) ()))
-          (else (throw 'user-error 'parse "unknown or illegal parser action \"~s\"~%" exp)))
+          (else (make-error exp "unknown or illegal parser action ~s~%" (format-record exp)) (values #f ())))
        (case (string->symbol (term-name exp))
         ((null) (values pos ()))
         ((name) 
@@ -620,7 +710,7 @@
                              (let ((success-args (filter (lambda (arg) (let-values (((new-pos taken) (parse arg pos path-ls)))
                                                                          new-pos)) (cdr args))))
                                (unless (null? success-args)
-                                 (throw 'user-error 'parse "parallel choice matches more than one alternative: \"~a\"~%" 
+                                 (make-error exp "parallel choice matches more than one alternative: ~s~%" 
                                                    (apply string-append (map (lambda (a) (format "~%    ~a" a)) (cons (car args) success-args)))))
                                (values new-pos taken))) (choice-loop (cdr args))))))))
         ((!) ; not
@@ -669,17 +759,11 @@
          (when *verbose* (printf "^< ~s -> ~s~%" (caar indent-ls) (caadr indent-ls)))
          (set! indent-ls (cdr indent-ls))
          (invalidate-caches)
-         (values pos ())))))
-    #;(with-handlers ((exn:fail:filesystem? 
-                     (lambda (exn)
-                       (fprintf (current-error-port) "~a~%" (exn-message exn)) #f))
-                    (exn:fail:user? 
-                     (lambda (exn)
-                       (fprintf (current-error-port) "error parsing ~s: ~a~%" infile (exn-message exn)) #f))
-                    #;(exn:fail? 
-                       (lambda (exn)
-                         (fprintf (current-error-port) "error parsing ~s: ~a~%" infile (exn-message exn)) #f))))
-	  
+         (values pos ()))
+        (else (make-error exp "Term ~s is not a valid parser action. Perhaps a pattern of that name is not defined correctly in imported grammars.~%Expression was \"~a\"~%" 
+          (term-name exp) (format-record exp))
+         (values pos #f)))))
+    
     (fluid-let ((*current-directory* (path-directory infile)))
       (let-values (((res taken) (parse (mt "name" "start") 0 ())))
         (unless (and (number? res) (= res len))
@@ -691,18 +775,19 @@
 ;;;;;;;;; main program: command line parsing
 (define (process-args argv)
   (cond 
-    ((string=? (car argv) "-v") (verbose-mode #t) (process-args (cdr argv)))
-    ((string=? (car argv) "-p") (verbosep-mode #t) (process-args (cdr argv)))
+    ((null? argv) '())
+    ((string=? (car argv) "-v") (set! *verbose* #t) (process-args (cdr argv)))
+    ((string=? (car argv) "-p") (set! *verbosep* #t) (process-args (cdr argv)))
+    ((string=? (car argv) "-c") (set! *cache* #f) (process-args (cdr argv)))
     (else argv)))
 
 (define (main argv)
-  (printf "argv: ~a~%" argv)
   (let ((infiles (process-args (cdr argv))))
     (exit (if (every (lambda (infile)
-                        (let ((modify-lang (make-lang)))
-                          (parse-file infile (lambda (read-lang terms) (printf "> ~a~%" (format-record (expand-term (car terms) read-lang modify-lang)))))))
+                        (let ((modify-lang (make-lang () () ())))
+                          (parse-file infile (lambda (read-lang terms) 
+						    (for-each (lambda (term) (printf "> ~a~%" (format-record (expand-term term read-lang modify-lang)))) terms)))))
                       infiles) 0 1))))
-
 
 ; interactive script
 (main (command-line))

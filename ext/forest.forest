@@ -1,5 +1,5 @@
-(import "core.patterns.forest")
-(import "core.rules.forest")
+;;;; forest.forest
+; The definition of the forest core language written in core language. 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,19 +13,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;; names
 
-(rule name (// (@ "Var" (+ (tok "'") nameliteral)) 
-               (@ "VarList" (+ (tok "'''") nameliteral))
+(rule name (// (@ "var" (+ "'" whitespace nameliteral)) 
+               (@ "varlist" (+ "'''" whitespace nameliteral))
                (@ "name" nameliteral)))
 (rule namechar (/ letterchar digitchar "$" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
 (rule namechars (/ (+ namechar namechars) ()))
-(rule nameliteral (tok (< (+ namechar namechars))))
+(rule nameliteral (+ (< (+ namechar namechars)) whitespace))
 
 ;;;;;;;;;;;;;;;;;;;;; String and null
 
 (rule stringchars (/ (+ (! doublequotechar) anychar stringchars) ()))
-(rule stringliteral (tok (+ doublequotechar (< stringchars) doublequotechar))) 
+(rule stringliteral (+ doublequotechar (< stringchars) doublequotechar whitespace)) 
 
-(rule null (+ (tok "(") (tok ")")))
+(rule null (+ "(" whitespace ")" whitespace))
 
 ;;;;;;;;;;;;;; whitespace
 
@@ -38,26 +38,27 @@
 
 (rule sexpr (// 
              name
-             (@ "String" stringliteral)
-             (@ "unexpanded" (parens (+ (sym "unexpanded") sexpr)))
-             (@ "syntaxpattern" (parens (+ (sym "pattern") (@ "unexpanded" sexpr) (@ "unexpanded" sexpr))))
-             (@ "rule" (parens (+ (sym "rule") name sexpr)))
-             (@ "insert" (parens (+ (sym "insert") name sexpr)))
-             (@ "newname" (parens (+ (sym "newname"))))
-             (@ "import" (parens (+ (sym "import") stringliteral)))
-             (@ "term" (parens (+ (sym "term") name sexprs)))
+             (@ "string" stringliteral)
+             (@ "unexpanded" (+ "(" whitespace "unexpanded" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "pattern" (+ "(" whitespace "syntaxpattern" (! namechar) whitespace (@ "unexpanded" sexpr) (@ "unexpanded" sexpr) ")" whitespace))
+                        
+             (@ "rule" (+ "(" whitespace "rule" (! namechar) whitespace name sexpr ")" whitespace))
+             (@ "insert" (+ "(" whitespace "insert" (! namechar) whitespace name sexpr ")" whitespace))
+             (@ "newname" (+ "(" whitespace "newname" (! namechar) whitespace ")" whitespace))
+             (@ "import" (+ "(" whitespace "import" (! namechar) whitespace stringliteral ")" whitespace))
+             (@ "term" (+ "(" whitespace "term" (! namechar) whitespace name sexprs ")" whitespace))
              
-             (@ "+" (parens (+ (sym "+") sexprs)))
-             (@ "//" (parens (+ (sym "//") sexprs)))
-             (@ "/" (parens (+ (sym "/") sexprs)))
-             (@ "!" (parens (+ (sym "!") sexpr)))
-             (@ "<" (parens (+ (sym "<") sexpr)))
-             (@ "@" (parens (+ (sym "@") sexpr sexprs)))
-             (@ ">" (parens (+ (sym ">") sexpr)))
-             (@ "$" (parens (+ (sym "$") sexpr sexprs)))
-             (@ "^>" (parens (+ (sym "^>") sexpr)))
-             (@ "^=" (parens (+ (sym "^=") sexpr)))
-             (@ "^<" (parens (+ (sym "^<"))))
+             (@ "+" (+ "(" whitespace "+" (! namechar) whitespace sexprs ")" whitespace))
+             (@ "//" (+ "(" whitespace "//" (! namechar) whitespace sexprs ")" whitespace))
+             (@ "/" (+ "(" whitespace "/" (! namechar) whitespace sexprs ")" whitespace))
+             (@ "!" (+ "(" whitespace "!" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "<" (+ "(" whitespace "<" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "@" (+ "(" whitespace "@" (! namechar) whitespace sexpr sexprs ")" whitespace))
+             (@ ">" (+ "(" whitespace ">" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "$" (+ "(" whitespace "$" (! namechar) whitespace sexpr sexprs ")" whitespace))
+             (@ "^>" (+ "(" whitespace "^>" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "^=" (+ "(" whitespace "^=" (! namechar) whitespace sexpr ")" whitespace))
+             (@ "^<" (+ "(" whitespace "^<" (! namechar) whitespace ")" whitespace))
              (@ "null" null)
              ))
 

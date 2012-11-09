@@ -2,9 +2,6 @@
 (import "core.patterns.forest")
 (import "core.rules.forest")
 
-;(pattern (oper 'c) (+ 'c whitespace))
-(insert sexpr (@ "oper" (+ (parens (+ (sym "oper") sexpr)))))
-
 ;(pattern (seq 'i 's) (+ 'i (* (+ 's 'i))))
 (insert sexpr (@ "seq" (+ (parens (+ (sym "seq") sexpr sexpr)))))
 
@@ -59,6 +56,8 @@
 ;(pattern (@.$: 'f 'n ,r) (@ 'n (+ 'f ($ (kw 'n) (+ ,r)))))
 (insert sexpr (@ "@.$:" (parens (+ (sym "@.$:") sexpr sexpr sexprs))))
 
-;(pattern (kw 'c) (+ (insert keyword (+ 'c (! letterordigit))) whitespace))
+;(syntaxpattern (kw 'c) (tok (insert keyword (+ 'c (! letterordigit)))))
 (insert sexpr (@ "kw" (parens (+ (sym "kw") sexpr))))
 
+;(syntaxpattern (oper 'c) (tok (+ 'c (! operatorchar))))
+(insert sexpr (@ "oper" (parens (+ (sym "oper") sexpr))))

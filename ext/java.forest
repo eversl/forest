@@ -17,11 +17,13 @@
 (rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
 (termpattern [language : [string : 'v]] (unexpanded [import : 'v]))
 
-(rule PackageDeclaration (@$: "package" QualifiedIdentifier semicolon$))
+(rule PackageDeclaration (@$: "package" PackageName semicolon$))
 
 (rule ImportDeclaration (@$: "import" (? (@: "static")) 
-                             (+ QualifiedIdentifier (? (+ dot (@ "all" (tok "*")))))
+                             (+ PackageName (? (+ dot (@ "all" (tok "*")))))
                              semicolon$))
+
+(rule PackageName (@ "package-name" (+ Identifier (* (+ dot Identifier)))))
 
 (rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
 
@@ -190,17 +192,26 @@
 ;    (rule self (/ (@ opname (+ next op self)) ...
 ;                            next))
 
-(rule UnaryExpression (+ SelectorExpression (* PostfixOp)))
+(rule UnaryExpression (/ (@ "postfix-inc" (+ UnaryExpression (oper "++")))
+                         (@ "postfix-dec" (+ UnaryExpression (oper "--")))
+                         SelectorExpression))
 
-(rule SelectorExpression (+ PrefixExpression (* (/ DimExpr
-                                                   (+ dot Selector)))))
+(rule SelectorExpression (/ (@ "dim-selector" (+ SelectorExpression DimExpr))
+                            (@ "this-selector" (+ SelectorExpression dot (kw "this")))
+                            (@ "super-selector" (+ SelectorExpression dot SuperInvocation))
+                            (@ "inner-selector" (+ SelectorExpression dot InnerCreator))
+                            (@ "field-selector" (+ SelectorExpression dot Identifier))
+                            (@ "call-selector" (+ SelectorExpression dot Identifier Arguments))
+                            PrefixExpression))
 
-(rule Selector (// (+ (kw "this"))
-                   (+ SuperInvocation)
-                   InnerCreator
-                   (+ Identifier (? Arguments))))
 
-(rule PrefixExpression (+ (* PrefixOp) CastExpression))
+(rule PrefixExpression (/ (@ "prefix-inc" (+ (oper "++") PrefixExpression))
+                          (@ "prefix-dec" (+ (oper "--") PrefixExpression))
+                          (@ "prefix-not" (+ (oper "!") PrefixExpression))
+                          (@ "prefix-inv" (+ (oper "~") PrefixExpression))
+                          (@ "prefix-pos" (+ (oper "+") PrefixExpression))
+                          (@ "prefix-neg" (+ (oper "-") PrefixExpression))
+                          CastExpression))
 
 (rule CastExpression (/ (@ "cast" (+ (parens Type) UnaryExpression)) Primary))
 
@@ -209,12 +220,17 @@
                   (@$: "this")
                   SuperInvocation                  
                   Creator
-                  (+ QualifiedIdentifier (? (/ (brackets Expression)
-                                               Arguments
-                                               (+ (* Dim) dot (kw "class")) 
-                                               (+ dot (/ (kw "this") 
-                                                         (+ (kw "super") Arguments) 
-                                                         InnerCreator)))))))
+                  QualifierExpr))
+
+(rule QualifiedIdentifier (@ "qual-identifier" (+ Identifier (* (+ dot Identifier)))))
+
+(rule QualifierExpr (/ (@ "qual" (+ Identifier dot QualifierExpr))
+                       (@ "array-field" (+ Identifier DimExpr))
+                       (@ "invocation" (+ Identifier Arguments))
+                       (@ "field-selector" Identifier)
+                       (@ "this" (kw "this"))
+                       (@ "super-invocation" SuperInvocation)
+                       (@ "inner-creator" InnerCreator)))
 
 (rule PrefixOp (/ (@ "inc" (oper "++"))
                   (@ "dec" (oper "--"))
@@ -222,9 +238,6 @@
                   (@ "inv" (oper "~"))
                   (@ "pos" (oper "+"))
                   (@ "neg" (oper "-"))))
-
-(rule PostfixOp (/ (@ "inc" (oper "++"))
-                   (@ "dec" (oper "--"))))
 
 
 (rule ParExpression (@ "par-expr" (parens$ Expression)))  
@@ -294,11 +307,9 @@
 ; TODO: exclude the keywords from identifiers
 (rule Identifier (tok (< (+ (! keyword) (/ letterchar "_" "$") (* letterordigit)))))
 
-(rule QualifiedIdentifier (+ Identifier (* (+ dot Identifier))))
-
 (rule letterordigit (/ letterchar digitchar "_" "$"))
 
-(rule OperatorChar (/ "!" "%" "^" "&" "*" "-" "+" "=" "|" "?" "<" ">" ":" "/"))
+(rule operatorchar (/ "!" "@" "#" "%" "^" "&" "*" "+" "-" "=" "?" "<" ">" "~" "|" ":"))
 
 (rule dot (tok "."))
 
@@ -370,4 +381,36 @@
 (rule BooleanLiteral (/ (@: "true") (@: "false")))
 
 (rule NullLiteral (@: "null"))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    Transformation rules for java
+
+; [class : [modifiers : [public]] #"HelloWorld" 
+;  [body : 
+;    [method : [modifiers : [public] [static]] [type : [void]] #"main" [formal-params : [param : [type : #"String" [dim]] [name : #"args"]]] 
+;      [block : 
+;        [statement-expr : [qual : #"System" [qual : #"out" [invocation : #"println" [arguments : [string : #"Hello, World"]]]]]]]]]]
+;  ->
+;  
+; Compiled from "HelloWorld.java"
+; public class HelloWorld extends java.lang.Object{
+; public HelloWorld();
+;   Code:
+;    0: aload_0
+;    1: invokespecial #1; //Method java/lang/Object."<init>":()V
+;    4: return
+; 
+; public static void main(java.lang.String[]);
+;   Code:
+;    0: getstatic #2; //Field java/lang/System.out:Ljava/io/PrintStream;
+;    3: ldc #3; //String Hello, World
+;    5: invokevirtual #4; //Method java/io/PrintStream.println:(Ljava/lang/String;)V
+;    8: return
+; 
+; }
+
+
+
+
 

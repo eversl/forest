@@ -1,0 +1,1296 @@
+;; 3.3 Unicode Escapes
+UnicodeInputCharacter:
+
+	UnicodeEscape
+
+	RawInputCharacter
+
+UnicodeEscape:
+
+	\ UnicodeMarker HexDigit HexDigit HexDigit HexDigit
+
+UnicodeMarker:
+
+	u
+
+	UnicodeMarker u
+
+RawInputCharacter:
+
+	any Unicode character
+
+HexDigit: one of
+
+	0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+
+;; 3.4 Line Terminators
+LineTerminator:
+
+	the ASCII LF character, also known as "newline"
+
+	the ASCII CR character, also known as "return"
+
+	the ASCII CR character followed by the ASCII LF character
+
+InputCharacter:
+
+	UnicodeInputCharacter but not CR or LF
+
+;; 3.5 Input Elements and Tokens
+Input:
+
+	InputElementsopt Subopt
+
+InputElements:
+
+	InputElement
+
+	InputElements InputElement
+
+InputElement:
+
+	WhiteSpace
+
+	Comment
+
+	Token
+
+Token:
+
+	Identifier
+
+	Keyword
+
+	Literal
+
+	Separator
+
+	Operator
+
+Sub:
+
+	the ASCII SUB character, also known as "control-Z"
+
+;; 3.6 White Space
+WhiteSpace:
+
+	the ASCII SP character, also known as "space"
+
+	the ASCII HT character, also known as "horizontal tab"
+
+	the ASCII FF character, also known as "form feed"
+
+	LineTerminator
+
+;; 3.7 Comments
+Comment:
+
+	TraditionalComment
+
+	EndOfLineComment
+
+	DocumentationComment
+
+TraditionalComment:
+
+	/ * NotStar CommentTail
+
+EndOfLineComment:
+
+	/ / CharactersInLineopt LineTerminator
+
+DocumentationComment:
+
+	/ * * CommentTailStar
+
+CommentTail:
+
+	* CommentTailStar
+
+	NotStar CommentTail
+
+CommentTailStar:
+
+	/
+
+	* CommentTailStar
+
+	NotStarNotSlash CommentTail
+
+NotStar:
+
+	InputCharacter but not *
+
+	LineTerminator
+
+NotStarNotSlash:
+
+	InputCharacter but not * or /
+
+	LineTerminator
+
+CharactersInLine:
+
+	InputCharacter
+
+	CharactersInLine InputCharacter
+
+;; 3.8 Identifiers
+Identifier:
+
+	IdentifierChars but not a Keyword or BooleanLiteral or NullLiteral
+
+IdentifierChars:
+
+	JavaLetter
+
+	IdentifierChars JavaLetterOrDigit
+
+JavaLetter:
+
+	any Unicode character that is a Java letter (see below)
+
+JavaLetterOrDigit:
+
+	any Unicode character that is a Java letter-or-digit (see below)
+
+;; 3.9 Keywords
+Keyword: one of
+
+	abstract	default	if	private	throw
+
+	boolean	do	implements	protected	throws
+
+	break	double	import	public	transient
+
+	byte	else	instanceof	return	try
+
+	case	extends	int	short	void
+
+	catch	final	interface	static	volatile
+
+	char	finally	long	super	while
+
+	class	float	native	switch
+
+	const	for	new	synchronized
+
+	continue	goto	package	this
+
+;; 3.10 Literals
+Literal:
+
+	IntegerLiteral
+
+	FloatingPointLiteral
+
+	BooleanLiteral
+
+	CharacterLiteral
+
+	StringLiteral
+
+	NullLiteral
+
+;;; 3.10.1 Integer Literals
+IntegerLiteral:
+
+	DecimalIntegerLiteral
+
+	HexIntegerLiteral	
+
+	OctalIntegerLiteral
+
+DecimalIntegerLiteral:
+
+	DecimalNumeral IntegerTypeSuffixopt
+
+HexIntegerLiteral:
+
+	HexNumeral IntegerTypeSuffixopt
+
+OctalIntegerLiteral:	
+
+	OctalNumeral IntegerTypeSuffixopt
+
+IntegerTypeSuffix: one of
+
+	l L
+
+DecimalNumeral:
+
+	0
+
+	NonZeroDigit Digitsopt
+
+Digits:
+
+	Digit
+
+	Digits Digit
+
+Digit:
+
+	0
+
+	NonZeroDigit
+
+NonZeroDigit: one of
+
+	1 2 3 4 5 6 7 8 9
+
+HexNumeral:
+
+	0 x HexDigit
+
+	0 X HexDigit
+
+	HexNumeral HexDigit
+
+HexDigit: one of
+
+	0 1 2 3 4 5 6 7 8 9 a b c d e f A B C D E F
+
+OctalNumeral:
+
+	0 OctalDigit
+
+	OctalNumeral OctalDigit
+
+OctalDigit: one of
+
+	0 1 2 3 4 5 6 7
+
+;;; 3.10.2 Floating-Point Literals
+FloatingPointLiteral:
+
+	Digits . Digitsopt ExponentPartopt FloatTypeSuffixopt
+
+	. Digits ExponentPartopt FloatTypeSuffixopt
+
+	Digits ExponentPart FloatTypeSuffixopt
+
+	Digits ExponentPartopt FloatTypeSuffix
+
+ExponentPart:
+
+	ExponentIndicator SignedInteger
+
+ExponentIndicator: one of
+
+	e E
+
+SignedInteger:
+
+	Signopt Digits
+
+Sign: one of
+
+	+ -
+
+FloatTypeSuffix: one of
+
+	f F d D
+
+;;; 3.10.3 Boolean Literals
+BooleanLiteral: one of
+
+	true false
+
+;;; 3.10.4 Character Literals
+CharacterLiteral:
+
+	' SingleCharacter '
+
+	' EscapeSequence '
+
+SingleCharacter:
+
+	InputCharacter but not ' or \
+
+;;; 3.10.5 String Literals
+StringLiteral:
+
+	" StringCharactersopt "
+
+StringCharacters:
+
+	StringCharacter
+
+	StringCharacters StringCharacter
+
+StringCharacter:
+
+	InputCharacter but not " or \
+
+	EscapeSequence
+
+;;; 3.10.6 Escape Sequences for Character and String Literals
+EscapeSequence:
+
+	\ b			/* \u0008: backspace BS						 */
+
+	\ t			/* \u0009: horizontal tab HT 						*/
+
+	\ n			/* \u000a: linefeed LF 						*/
+
+	\ f			/* \u000c: form feed FF 						*/
+
+	\ r			/* \u000d: carriage return CR 						*/
+
+	\ "			/* \u0022: double quote				 " 		*/
+
+	\ '			/* \u0027: single quote '						 */
+
+	\ \			/* \u005c: backslash \						 */
+
+	OctalEscape			/* \u0000 to \u00ff: from octal value */
+
+OctalEscape:
+
+	\ OctalDigit
+
+	\ OctalDigit OctalDigit
+
+	\ ZeroToThree OctalDigit OctalDigit
+
+OctalDigit: one of
+
+	0 1 2 3 4 5 6 7
+
+ZeroToThree: one of
+
+	0 1 2 3
+
+;;; 3.10.7 The Null Literal
+NullLiteral:
+
+	null
+
+;;; 3.11 Separators
+Separator: one of
+
+	(	)	{	}	[	]	;	,	.
+
+;;; 3.12 Operators
+Operator: one of
+
+	=	>	<	!	~	?	:
+
+	==	<=	>=	!=	&&	||	++	--
+
+	+	-	*	/	&	|	^	%	<<	>>	>>>
+
+	+=	-=	*=	/=	&=	|=	^=	%=	<<=	>>=	>>>=
+
+;; 4.1 The Kinds of Types and Values
+Type:
+
+	PrimitiveType
+
+	ReferenceType
+
+;; 4.2 Primitive Types and Values
+PrimitiveType:
+
+	NumericType
+
+	boolean
+
+NumericType:
+
+	IntegralType
+
+	FloatingPointType
+
+IntegralType: one of
+
+	byte short int long char
+
+FloatingPointType: one of
+
+	float double
+
+;; 4.3 Reference Types and Values
+ReferenceType:
+
+	ClassOrInterfaceType
+
+	ArrayType
+
+ClassOrInterfaceType:
+
+	ClassType
+
+	InterfaceType
+
+ClassType:
+
+	TypeName
+
+InterfaceType:
+
+	TypeName
+
+ArrayType:
+
+	Type [ ]
+
+;; 6.5 Determining the Meaning of a Name
+PackageName:
+
+	Identifier
+
+	PackageName . Identifier
+
+TypeName:
+
+	Identifier
+
+	PackageName . Identifier
+
+ExpressionName:
+
+	Identifier
+
+	AmbiguousName . Identifier
+
+MethodName:
+
+	Identifier
+
+	AmbiguousName . Identifier
+
+AmbiguousName:
+
+	Identifier
+
+	AmbiguousName . Identifier
+
+;; 7.3 Compilation Units
+CompilationUnit:
+
+	PackageDeclarationopt ImportDeclarationsopt TypeDeclarationsopt
+
+ImportDeclarations:
+
+	ImportDeclaration
+
+	ImportDeclarations ImportDeclaration
+
+TypeDeclarations:
+
+	TypeDeclaration
+
+	TypeDeclarations TypeDeclaration
+
+;; 7.5 Import Declarations
+ImportDeclaration:
+
+	SingleTypeImportDeclaration
+
+	TypeImportOnDemandDeclaration
+
+;;; 7.5.1 Single-Type-Import Declaration
+SingleTypeImportDeclaration:
+
+	import TypeName ;
+
+;;; 7.5.2 Type-Import-on-Demand Declaration
+TypeImportOnDemandDeclaration:
+
+	import PackageName . * ;
+
+;;; 7.6 Type Declarations
+TypeDeclaration:
+
+	ClassDeclaration
+
+	InterfaceDeclaration
+
+	;
+
+;; 8.1 Class Declaration
+ClassDeclaration:
+
+	ClassModifiersopt class Identifier Superopt Interfacesopt ClassBody
+
+;;; 8.1.2 Class Modifiers
+ClassModifiers:
+
+	ClassModifier
+
+	ClassModifiers ClassModifier
+
+ClassModifier: one of
+
+	public abstract final
+
+;;; 8.1.3 Superclasses and Subclasses
+Super:
+
+	extends ClassType
+
+;;; 8.1.4 Superinterfaces
+Interfaces:
+
+	implements InterfaceTypeList
+
+InterfaceTypeList:
+
+	InterfaceType
+
+	InterfaceTypeList , InterfaceType
+
+;;; 8.1.5 Class Body and Member Declarations
+ClassBody:
+
+	{ ClassBodyDeclarationsopt }
+
+ClassBodyDeclarations:
+
+	ClassBodyDeclaration
+
+	ClassBodyDeclarations ClassBodyDeclaration
+
+ClassBodyDeclaration:
+
+	ClassMemberDeclaration
+
+	StaticInitializer
+
+	ConstructorDeclaration
+
+ClassMemberDeclaration:
+
+	FieldDeclaration
+
+	MethodDeclaration
+
+;; 8.3 Field Declarations
+FieldDeclaration:
+
+	FieldModifiersopt Type VariableDeclarators ;
+
+VariableDeclarators:
+
+	VariableDeclarator
+
+	VariableDeclarators , VariableDeclarator
+
+VariableDeclarator:
+
+	VariableDeclaratorId
+
+	VariableDeclaratorId = VariableInitializer
+
+VariableDeclaratorId:
+
+	Identifier
+
+	VariableDeclaratorId [ ]
+
+VariableInitializer:
+
+	Expression
+
+	ArrayInitializer
+
+;;; 8.3.1 Field Modifiers
+FieldModifiers:
+
+	FieldModifier
+
+	FieldModifiers FieldModifier
+
+FieldModifier: one of
+
+	public protected private
+
+	final static transient volatile
+
+;; 8.4 Method Declarations
+MethodDeclaration:
+
+	MethodHeader MethodBody
+
+MethodHeader:
+
+	MethodModifiersopt ResultType MethodDeclarator Throwsopt
+
+ResultType:
+
+	Type
+
+	void
+
+MethodDeclarator:
+
+	Identifer ( FormalParameterListopt )
+
+;;; 8.4.1 Formal Parameters
+FormalParameterList:
+
+	FormalParameter
+
+	FormalParameterList , FormalParameter
+
+FormalParameter:
+
+	Type VariableDeclaratorId
+
+VariableDeclaratorId:
+
+	Identifier
+
+	VariableDeclaratorId [ ]
+
+;;; 8.4.3 Method Modifiers
+MethodModifiers:
+
+	MethodModifier
+
+	MethodModifiers MethodModifier
+
+MethodModifier: one of
+
+	public protected private
+
+	abstract static final synchronized native
+
+;;; 8.4.4 Method Throws
+Throws:
+
+	throws ClassTypeList
+
+ClassTypeList:
+
+	ClassType
+
+	ClassTypeList , ClassType
+
+;;; 8.4.5 Method Body
+MethodBody:
+
+	Block 
+
+	;
+
+;; 8.5 Static Initializers
+StaticInitializer:
+
+	static Block
+
+;; 8.6 Constructor Declarations
+ConstructorDeclaration:
+
+	ConstructorModifiersopt ConstructorDeclarator
+
+		Throwsopt ConstructorBody
+
+ConstructorDeclarator:
+
+	SimpleTypeName ( FormalParameterListopt )
+
+;;; 8.6.3 Constructor Modifiers
+ConstructorModifiers:
+
+	ConstructorModifier
+
+	ConstructorModifiers ConstructorModifier
+
+ConstructorModifier: one of
+
+	public protected private
+
+;;; 8.6.5 Constructor Body
+ConstructorBody:
+
+	{ ExplicitConstructorInvocationopt BlockStatementsopt }
+
+ExplicitConstructorInvocation:
+
+	this ( ArgumentListopt ) ;
+
+	super ( ArgumentListopt ) ;
+
+;; 9.1 Interface Declarations
+InterfaceDeclaration:
+
+	InterfaceModifiersopt interface Identifier
+
+		ExtendsInterfacesopt InterfaceBody
+
+;;; 9.1.2 Interface Modifiers
+InterfaceModifiers:
+
+	InterfaceModifier
+
+	InterfaceModifiers InterfaceModifier
+
+InterfaceModifier: one of
+
+	public abstract
+
+9.1.3 Superinterfaces
+ExtendsInterfaces:
+
+	extends InterfaceType
+
+	ExtendsInterfaces , InterfaceType
+
+;;; 9.1.4 Interface Body and Member Declarations
+InterfaceBody:
+
+	{ InterfaceMemberDeclarationsopt }
+
+InterfaceMemberDeclarations:
+
+	InterfaceMemberDeclaration
+
+	InterfaceMemberDeclarations InterfaceMemberDeclaration
+
+InterfaceMemberDeclaration:
+
+	ConstantDeclaration
+
+	AbstractMethodDeclaration
+
+;; 9.3 Field (Constant) Declarations
+ConstantDeclaration:
+
+	ConstantModifiers Type VariableDeclarator
+
+ConstantModifiers: one of
+
+	public static final
+
+;; 9.4 Abstract Method Declarations
+AbstractMethodDeclaration:
+
+	AbstractMethodModifiersopt ResultType MethodDeclarator Throwsopt ;
+
+AbstractMethodModifiers:
+
+	AbstractMethodModifier
+
+	AbstractMethodModifiers AbstractMethodModifier
+
+AbstractMethodModifier: one of
+
+	public abstract
+
+;; 10.6 Arrays Initializers
+ArrayInitializer:
+
+	{ VariableInitializersopt ,opt }
+
+VariableInitializers:
+
+	VariableInitializer
+
+	VariableInitializers , VariableInitializer
+
+;; 14.2 Blocks
+Block:
+
+	{ BlockStatementsopt }
+
+BlockStatements:
+
+	BlockStatement
+
+	BlockStatements BlockStatement
+
+BlockStatement:
+
+	LocalVariableDeclarationStatement
+
+	Statement
+
+;; 14.3 Local Variable Declaration Statements
+LocalVariableDeclarationStatement:
+
+	LocalVariableDeclaration ;
+
+LocalVariableDeclaration:
+
+	Type VariableDeclarators
+
+;; 14.4 Statements
+Statement:
+
+	StatementWithoutTrailingSubstatement
+
+	LabeledStatement
+
+	IfThenStatement
+
+	IfThenElseStatement
+
+	WhileStatement
+
+	ForStatement
+
+StatementNoShortIf:
+
+	StatementWithoutTrailingSubstatement
+
+	LabeledStatementNoShortIf
+
+	IfThenElseStatementNoShortIf
+
+	WhileStatementNoShortIf
+
+	ForStatementNoShortIf
+
+StatementWithoutTrailingSubstatement:
+
+	Block
+
+	EmptyStatement
+
+	ExpressionStatement
+
+	SwitchStatement
+
+	DoStatement
+
+	BreakStatement
+
+	ContinueStatement
+
+	ReturnStatement
+
+	SynchronizedStatement
+
+	ThrowStatement
+
+	TryStatement
+
+;; 14.5 The Empty Statement
+EmptyStatement:
+
+	;
+
+;; 14.6 Labeled Statements
+LabeledStatement:
+
+	Identifier : Statement
+
+LabeledStatementNoShortIf:
+
+	Identifier : StatementNoShortIf
+
+;; 14.7 Expression Statements
+ExpressionStatement:
+
+	StatementExpression ;
+
+StatementExpression:
+
+	Assignment
+
+	PreIncrementExpression
+
+	PreDecrementExpression
+
+	PostIncrementExpression
+
+	PostDecrementExpression
+
+	MethodInvocation
+
+	ClassInstanceCreationExpression
+
+;; 14.8 The if Statement
+IfThenStatement:
+
+	if ( Expression ) Statement
+
+IfThenElseStatement:
+
+	if ( Expression ) StatementNoShortIf else Statement
+
+IfThenElseStatementNoShortIf:
+
+	if ( Expression ) StatementNoShortIf else StatementNoShortIf
+
+;; 14.9 The switch Statement
+SwitchStatement:
+
+	switch ( Expression ) SwitchBlock
+
+SwitchBlock:
+
+	{ SwitchBlockStatementGroupsopt SwitchLabelsopt }
+
+SwitchBlockStatementGroups:
+
+	SwitchBlockStatementGroup
+
+	SwitchBlockStatementGroups SwitchBlockStatementGroup
+
+SwitchBlockStatementGroup:
+
+	SwitchLabels BlockStatements
+
+SwitchLabels:
+
+	SwitchLabel
+
+	SwitchLabels SwitchLabel
+
+SwitchLabel:
+
+	case ConstantExpression :
+
+	default :
+
+;; 14.10 The while Statement
+WhileStatement:
+
+	while ( Expression ) Statement
+
+WhileStatementNoShortIf:
+
+	while ( Expression ) StatementNoShortIf
+
+;; 14.11 The do Statement
+DoStatement:
+
+	do Statement while ( Expression ) ;
+
+;; 14.12 The for Statement
+ForStatement:
+
+	for ( ForInitopt ; Expressionopt ; ForUpdateopt )
+
+		Statement
+
+ForStatementNoShortIf:
+
+	for ( ForInitopt ; Expressionopt ; ForUpdateopt )
+
+		StatementNoShortIf
+
+ForInit:
+
+	StatementExpressionList
+
+	LocalVariableDeclaration
+
+ForUpdate:
+
+	StatementExpressionList
+
+StatementExpressionList:
+
+	StatementExpression
+
+	StatementExpressionList , StatementExpression
+
+;; 14.13 The break Statement
+BreakStatement:
+
+	break Identifieropt ;
+
+;; 14.14 The continue Statement
+ContinueStatement:
+
+	continue Identifieropt ;
+
+;; 14.15 The return Statement
+ReturnStatement:
+
+	return Expressionopt ;
+
+;; 14.16 The throw Statement
+ThrowStatement:
+
+	throw Expression ;
+
+;; 14.17 The synchronized Statement
+SynchronizedStatement:
+
+	synchronized ( Expression ) Block
+
+;; 14.18 The try statement
+TryStatement:
+
+	try Block Catches
+
+	try Block Catchesopt Finally
+
+Catches:
+
+	CatchClause
+
+	Catches CatchClause
+
+CatchClause:
+
+	catch ( FormalParameter ) Block
+
+Finally:
+
+	finally Block
+
+;; 15.7 Primary Expressions
+Primary:
+
+	PrimaryNoNewArray
+
+	ArrayCreationExpression
+
+PrimaryNoNewArray:
+
+	Literal
+
+	this
+
+	( Expression )
+
+	ClassInstanceCreationExpression
+
+	FieldAccess
+
+	MethodInvocation
+
+	ArrayAccess
+
+;; 15.8 Class Instance Creation Expressions
+ClassInstanceCreationExpression:
+
+	new ClassType ( ArgumentListopt )
+
+ArgumentList:
+
+	Expression
+
+	ArgumentList , Expression
+
+;; 15.9 Array Creation Expressions
+ArrayCreationExpression:
+
+	new PrimitiveType DimExprs Dimsopt
+
+	new TypeName DimExprs Dimsopt
+
+DimExprs:
+
+	DimExpr
+
+	DimExprs DimExpr
+
+DimExpr:
+
+	[ Expression ]
+
+Dims:
+
+	[ ]
+
+	Dims [ ]
+
+;; 15.10 Field Access Expressions
+FieldAccess:
+
+	Primary . Identifier
+
+	super . Identifier
+
+;; 15.11 Method Invocation Expressions
+MethodInvocation:
+
+	MethodName ( ArgumentListopt )
+
+	Primary . Identifier ( ArgumentListopt )
+
+	super . Identifier ( ArgumentListopt )
+
+;; 15.12 Array Access Expressions
+ArrayAccess:
+
+	ExpressionName [ Expression ]
+
+	PrimaryNoNewArray [ Expression ]
+
+;; 15.13 Postfix Expressions
+PostfixExpression:
+
+	Primary
+
+	ExpressionName
+
+	PostIncrementExpression
+
+	PostDecrementExpression
+
+;; 15.14 Unary Operators
+UnaryExpression:
+
+	PreIncrementExpression
+
+	PreDecrementExpression
+
+	+ UnaryExpression
+
+	- UnaryExpression
+
+	UnaryExpressionNotPlusMinus
+
+PreIncrementExpression:
+
+	++ UnaryExpression
+
+PreDecrementExpression:
+
+	-- UnaryExpression
+
+UnaryExpressionNotPlusMinus:
+
+	PostfixExpression
+
+	~ UnaryExpression
+
+	! UnaryExpression
+
+	CastExpression
+
+;; 15.15 Cast Expressions
+CastExpression:
+
+	( PrimitiveType Dimsopt ) UnaryExpression
+
+	( ReferenceType ) UnaryExpressionNotPlusMinus
+
+;; 15.16 Multiplicative Operators
+MultiplicativeExpression:
+
+	UnaryExpression
+
+	MultiplicativeExpression * UnaryExpression
+
+	MultiplicativeExpression / UnaryExpression
+
+	MultiplicativeExpression % UnaryExpression	
+
+;; 15.17 Additive Operators
+AdditiveExpression:
+
+	MultiplicativeExpression
+
+	AdditiveExpression + MultiplicativeExpression
+
+	AdditiveExpression - MultiplicativeExpression
+
+;; 15.18 Shift Operators
+ShiftExpression:
+
+	AdditiveExpression
+
+	ShiftExpression << AdditiveExpression
+
+	ShiftExpression >> AdditiveExpression
+
+	ShiftExpression >>> AdditiveExpression
+
+;; 15.19 Relational Operators
+RelationalExpression:
+
+	ShiftExpression
+
+	RelationalExpression < ShiftExpression
+
+	RelationalExpression > ShiftExpression
+
+	RelationalExpression <= ShiftExpression
+
+	RelationalExpression >= ShiftExpression
+
+	RelationalExpression instanceof ReferenceType
+
+;; 15.20 Equality Operators
+EqualityExpression:
+
+	RelationalExpression
+
+	EqualityExpression == RelationalExpression
+
+	EqualityExpression != RelationalExpression
+
+;; 15.21 Bitwise and Logical Operators
+AndExpression:
+
+	EqualityExpression
+
+	AndExpression & EqualityExpression
+
+ExclusiveOrExpression:
+
+	AndExpression
+
+	ExclusiveOrExpression ^ AndExpression
+
+InclusiveOrExpression:
+
+	ExclusiveOrExpression
+
+	InclusiveOrExpression | ExclusiveOrExpression
+
+;; 15.22 Conditional-And Operator &&
+ConditionalAndExpression:
+
+	InclusiveOrExpression
+
+	ConditionalAndExpression && InclusiveOrExpression
+
+15.23 Conditional-Or Operator ||
+ConditionalOrExpression:
+
+	ConditionalAndExpression
+
+	ConditionalOrExpression || ConditionalAndExpression
+
+;; 15.24 Conditional Operator ? :
+ConditionalExpression:
+
+	ConditionalOrExpression
+
+	ConditionalOrExpression ? Expression : ConditionalExpression
+
+;; 15.25 Assignment Operators
+AssignmentExpression:
+
+	ConditionalExpression
+
+	Assignment
+
+Assignment:
+
+	LeftHandSide AssignmentOperator AssignmentExpression
+
+LeftHandSide:
+
+	ExpressionName
+
+	FieldAccess
+
+	ArrayAccess
+
+AssignmentOperator: one of
+
+	= *= /= %= += -= <<= >>= >>>= &= ^= |=
+
+;; 15.26 Expression
+Expression:
+
+	AssignmentExpression
+
+;; 15.27 Constant Expression
+
+ConstantExpression:
+
+	Expression
+

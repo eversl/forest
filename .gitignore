@@ -65,3 +65,27 @@ forest.rkt~
 ext/java.forest~
 
 forest.bak
+
+bin/forest$frame.class
+
+*.class
+
+cache/core.patterns.forest,ext_forest.forest.scm
+
+cache/core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/core.rules.forest,ext_forest.forest.scm
+
+cache/ext_forest.forest.scm
+
+cache/ext_java.forest.scm
+
+cache/standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/standard.rules.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+.classpath
+
+.project
