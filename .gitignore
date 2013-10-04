@@ -89,3 +89,15 @@ cache/standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patt
 .classpath
 
 .project
+
+cache/functional.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/functional.patterns.forest,standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/functional.rules.forest,functional.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/functional.rules.forest,functional.patterns.forest,standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/test_algebra.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/test_functional.forest,test_algebra.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm

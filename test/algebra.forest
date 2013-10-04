@@ -1,0 +1,62 @@
+
+; A simple algebra expressed in patterns
+
+(import "core.patterns.forest")
+(import "core.rules.forest")
+
+(import "standard.patterns.forest")
+(import "standard.rules.forest")
+
+(import "functional.patterns.forest")
+(import "functional.rules.forest")
+
+
+(termpattern 
+  [apply : 'a] 
+  'a)
+
+(termpattern 
+  [apply : '''a] 
+  (unexpanded [error : "'apply' takes only one argument"]))
+
+;;;;;;;;; succ, pred ;;;;;;;;;
+
+(termpattern 
+  [pred : [succ : 'a]] 
+  'a)
+
+(termpattern 
+  [succ : [pred : 'a]] 
+  'a)
+
+{{ functional
+
+function one() = succ(zero())
+
+function two() = succ(one())
+
+function three() = succ(two())
+
+;;;;;;;; plus ;;;;;;;;;
+function plus (a, zero())   = a
+            | (zero(), b)   = b
+            | (a, succ(b)) = plus(succ(a), b) 
+            | (a, pred(b)) = plus(pred(a), b)
+
+
+;;;;;;;; minus ;;;;;;;;;
+function minus (a, zero())   = a
+             | (a, pred(b))  = minus(succ(a), b)
+             | (succ(a), succ(b)) = minus(a, b) 
+             | (a, succ(b)) = minus(pred(a), b)
+
+
+;;;;;;;; neg ;;;;;;;;;
+function neg (a) = apply(minus(zero(), a))
+
+;;;;;;;; times ;;;;;;;;;
+function times (a, zero()) = zero()
+             | (a, succ(b)) = plus(times(a, b), a)
+
+}}
+

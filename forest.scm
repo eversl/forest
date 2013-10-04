@@ -538,7 +538,7 @@
           (parse-file infile (lambda (read-lang terms) (expand-term (car terms) read-lang modify-lang)))
           (set-language-files! modify-lang files)
           (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port)))))
-    (prepare-language-choices (mt "name" "start") modify-lang)
+    #;(prepare-language-choices (mt "name" "start") modify-lang)
           
     (when (or *verbose* *verbosep*) (printf "Done reading grammar ~a: ~a ~%" infile (language-files modify-lang)))))
 

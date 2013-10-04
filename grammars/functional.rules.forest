@@ -1,0 +1,39 @@
+; Definitions for syntax extensions needed to read the patterns 
+(import "core.patterns.forest")
+(import "core.rules.forest")
+
+(import "standard.patterns.forest")
+(import "standard.rules.forest")
+
+;;;;;;;;;;;;;;;;;;;;; define identifiers, keywords, etc
+
+(rule comma (tok ","))
+
+(rule letterordigit (/ letterchar digitchar "$" "<" "=" ">" "^" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@"))
+
+(rule identifier (tok (< (+ (! keyword) (! digitchar) (*1 letterordigit)))))
+
+;;;;;;;;;;;;;;;;;;;;; add sexprs terms
+
+(insert sexpr (braces (braces (+ (tok "functional") (* functional)))))
+
+
+;;;;;;;;;;;;;;;;;;;;; functional terms
+
+(rule funcbody (seq (@ "defcase" (+ functionargs (tok "=") functionalexpr)) (tok "|")))
+
+(insert functional (@ "functiondef" (+ (kw "function") identifier 
+	funcbody)))
+
+(insert functionalexpr (/ (@ "functionref" (+ identifier functionargs))
+                          (@ "variable" (+ identifier))))
+
+(insert functionalexpr (+ (+ (tok doublequotechar) identifier (tok doublequotechar))))
+(insert functionalexpr (@ "varfunctionref" (+ (tok "`") identifier (tok "`") functionargs)))
+
+(insert functionalexpr (@ "anondef" (+ (kw "function") 
+	funcbody)))
+
+(rule functionargs (@ "functionargs" (parens (+ (* (+ functionalexpr comma)) (? (/ listvariable functionalexpr))))))
+
+(rule listvariable (@ "listvariable" (+ identifier (tok "..."))))

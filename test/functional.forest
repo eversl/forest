@@ -1,0 +1,48 @@
+(import "core.patterns.forest")
+(import "core.rules.forest")
+
+(import "functional.patterns.forest")
+(import "functional.rules.forest")
+
+;(termpattern 
+;  [[closure : 'fn '''cl-args] :'''args]
+;  ['fn : '''cl-args '''args])
+
+;(termpattern 
+;  [call : 'fn '''args]
+;  ['fn : '''args])
+
+{{ functional             
+
+;function +n(n, v) = plus(n, v)
+
+;function map+n (n, lst(tl...)) = map(closure("+n", n), lst(tl...))
+
+function map+n (n, lst(tl...)) = map(function (v) = plus(n, v), lst(tl...))
+
+
+function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
+           | (fn, lst(    tl...)) = lst(tl...)
+
+
+
+;function +2(v) = apply(plus(two(), v))
+
+;function map+2 (lst(tl...)) = apply(map(+2(), lst(tl...)))
+;                              map(function (v) = plus(two(), 'v), lst('''tl))
+
+;;;;;;;; map+1 ;;;;;;;;;;;
+
+;function map+1 (lst(tl...)) = apply(map(succ(), lst(tl...)))
+
+;;;;;;;; map ;;;;;;;;;;;
+
+;function map (`fn`(), lst(hd, tl...)) = apply(cons(`fn`(hd), map(`fn`(), lst(tl...))))
+;           | (`fn`(), lst(    tl...)) = lst(tl...)
+}}
+
+;;;;;;;; cons ;;;;;;;;;;;
+
+(termpattern [cons : 'hd [lst : '''tl]]
+             [lst : 'hd '''tl])
+

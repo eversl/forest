@@ -1,0 +1,33 @@
+(import "core.patterns.forest")
+(import "core.rules.forest")
+
+(import "test/algebra.forest")
+(import "test/functional.forest")
+
+; [succ : [pred : [zero]]]
+; [plus : [one] [zero]]
+; [minus : [one] [zero]]
+; [plus : [one] [one]]
+
+; [minus : [one] [neg : [two]]]
+; [minus : [neg : [two]] [one]]
+
+; [minus : [two] [neg : [one]]]
+; [minus : [neg : [one]] [two]]
+
+; [minus : [neg : [one]] [neg : [two]]]
+
+; [neg : [neg : [three]]]
+
+; [minus : [one] [two]]
+; [pred : [plus : [three] [three]]]
+; [times : [three] [three]]
+
+;[map+1 : [lst : [one] [two]]]
+
+;[map+2 : [lst : [one] [two]]]
+
+[map+n : [three] [lst : [one] [two]]]
+
+;[plus : [one]]
+

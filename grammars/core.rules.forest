@@ -9,10 +9,12 @@
 (insert sexpr (@ "?" (+ "(" whitespace "?" whitespace sexpr ")" whitespace)))
 (insert sexpr (@ "&" (+ "(" whitespace "&" whitespace sexpr ")" whitespace)))
 
+(insert sexpr (@ "unreplaced" (+ "(" whitespace "unreplaced" (! namechar) whitespace sexpr ")" whitespace)))
+
 ; Syntax for term patterns 
              
 (insert sexpr (@ "pattern" (+ "(" whitespace "termpattern" (! namechar) whitespace sexpr sexpr ")" whitespace)))
-(insert sexpr (@ "term" (+ "[" whitespace name (/ (+ ":" whitespace sexprs) ()) "]" whitespace)))
+(insert sexpr (@ "term" (+ "[" whitespace sexpr (/ (+ ":" whitespace sexprs) ()) "]" whitespace)))
 (insert sexpr (@ "token" (+ "#" whitespace doublequotechar (< stringchars) doublequotechar whitespace)))
 
 (rule endoffile (! anychar))

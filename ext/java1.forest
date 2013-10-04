@@ -732,7 +732,7 @@ InterfaceModifier: one of
 
 	public abstract
 
-9.1.3 Superinterfaces
+;;; 9.1.3 Superinterfaces
 ExtendsInterfaces:
 
 	extends InterfaceType
@@ -1126,6 +1126,18 @@ PostfixExpression:
 	PostIncrementExpression
 
 	PostDecrementExpression
+
+;;; 15.13.2 Postfix Increment Operator ++
+
+PostIncrementExpression:
+
+	PostfixExpression ++
+
+;;; 15.13.3 Postfix Decrement Operator --
+
+PostDecrementExpression:
+
+	PostfixExpression --
 
 ;; 15.14 Unary Operators
 UnaryExpression:
