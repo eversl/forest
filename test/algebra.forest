@@ -10,15 +10,6 @@
 (import "functional.patterns.forest")
 (import "functional.rules.forest")
 
-
-(termpattern 
-  [apply : 'a] 
-  'a)
-
-(termpattern 
-  [apply : '''a] 
-  (unexpanded [error : "'apply' takes only one argument"]))
-
 ;;;;;;;;; succ, pred ;;;;;;;;;
 
 (termpattern 
@@ -52,7 +43,7 @@ function minus (a, zero())   = a
 
 
 ;;;;;;;; neg ;;;;;;;;;
-function neg (a) = apply(minus(zero(), a))
+function neg (a) = minus(zero(), a)
 
 ;;;;;;;; times ;;;;;;;;;
 function times (a, zero()) = zero()

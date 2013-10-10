@@ -213,7 +213,7 @@
                          (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
                                                     (match-lambda*
                                                       [(list read-lang lang (cons _ repl) (cons _ pat)) 
-                                                       (printip "add Pattern ~a => ~a~n" pat repl)
+                                                       (when (*verbosep*) (printip "add Pattern ~a => ~a~n" pat repl))
                                                        (let ([name (term-name pat)])
                                                          (if (term? name)
                                                              (pattern-put! '|| (cons (cons pat repl) (pattern-ref '|| lang)) lang)
@@ -275,65 +275,71 @@
                                             (raise exn))])
     (cond [(or (token? trm) (string? trm)) trm]
           [(not (term? trm)) (raise-user-error 'expand-term "called with something other than a term or token: ~s" trm)]
-          [(equal? (term-name trm) "unexpanded") (car (term-vals trm))]
-          [else
-           (parameterize ([*verbosep* (if (member (term-name trm) (*verbosepats*)) #t (*verbosep*))]) 
-             (let pat-loop ([pats (reverse (pattern-ref (if (term? (term-name trm)) '|| (term-name trm)) lang))])
-               (if (null? pats) 
-                   (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) (term-name trm) 
-                              (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm)))
-                   (let ([bnd (let match-loop ([bindings null]
-                                               [pattern (car (car pats))]
-                                               [trm trm])
-                                (printip-up "Matching ~a on ~a...~n" pattern trm)
-                                (let ([res (match pattern 
-                                             [(term _ _ _ "var" (list v)) (let ([existing-var (assoc v bindings token-equal?)])
-											                                ; check if binding same variable is to same value
-											                                (if existing-var (if (term-equal? (cdr existing-var) trm) bindings #f) 
-																			  (cons (cons v trm) bindings)))]
-                                             [(term _ _ _ n (list-rest r ... (list (term _ _ _ "varlist" (list v))))) 
-                                              (if (and (term? trm) (>= (length (term-vals trm)) (length r)))                                                
-                                                  (let* ([b (match n 
-                                                              [(? term?) (match-loop bindings (term-name pattern) (term-name trm))]
-                                                              [_ (if (token-equal? (term-name trm) n) bindings #f)])]
-                                                         [bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (take (term-vals trm) (length r)))])
-                                                    (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
-                                             [(term _ _ _ n r) (if (and (term? trm) (eq? (length r) (length (term-vals trm))))
-                                                                   (let ([b (match n 
-                                                                              [(term _ _ _ "var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
-                                                                              [_ (if (token-equal? (term-name trm) n) bindings #f)])])
-                                                                     (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
-                                             [(token _ _ _ c) (printip "Matching token ~a with ~a~n" pattern trm)
-                                                              (if (token-equal? pattern trm) bindings #f)]
-                                             [(? string? s) (printf "got a string ~s!!~n" s) (if (eq? s trm) bindings #f)]
-                                             [v (printf "got into notypeland with ~s, ~a!!~n" v (string? v)) (if (eq? v trm) bindings #f)])])
-                                  (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm)
-                                  res))])
-                     (if bnd (begin (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) trm bnd)
-                                    (let* ([bnd (map (match-lambda [(cons n (list trms ...)) (cons n (map (lambda (t) (expand-term t lang modify-lang)) trms))]
-                                                                   [(cons n t) (cons n (expand-term t lang modify-lang))]) bnd)]
-                                           [res (let replace-loop ([repl (cdr [car pats])])
-                                                  (match repl 
-                                                    [(? procedure?) (apply repl lang modify-lang bnd)]
-                                                    [(term _ _ _ "unreplaced" (list v)) v]
-                                                    [(term _ _ _ "var" (list (or (? token? v) (? string? v)))) 
-                                                     (let ([val (assoc v bnd token-equal?)])
-                                                       (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
-                                                                                                         (token-chars v) (term-name trm)) v)) 
-                                                           (cdr val)))]
-                                                    [(term l1 l2 l3 n r) 
-                                                     (term l1 l2 l3 (replace-loop n) 
-                                                           (foldr (match-lambda** 
-                                                                   [((term _ _ _ "varlist" (list (or (? token? v) (? string? v)))) r)
-                                                                    (let ([val (assoc v bnd token-equal?)])
-                                                                      (if (not val) (eprintf (make-errormessage (format "List variable ~a not found in pattern definition '~a'~n" 
-                                                                                                                        (token-chars v) (term-name trm)) v)) 
-                                                                          (append (cdr val) r)))]
-                                                                   [(v r) (cons (replace-loop v) r)]) '() r))]
-                                                    [v v]))])
-                                      (printip-dn "Replaced ~a with ~a~n" trm res)
-                                      (expand-term res lang modify-lang))) 
-                         (pat-loop (cdr pats)))))))])))
+          [(equal? (term-name trm) "unexpanded") (car (term-vals trm))] ;; TODO: change this
+          [else 
+           (parameterize ([*verbosep* (if (member (term-name trm) (*verbosepats*)) #t (*verbosep*))])
+             (printip-up "(expand-term ~a)~n" trm)
+             (begin0 
+               (let* ([post-name (expand-term (term-name trm) lang modify-lang)]
+                      [post-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))]
+                      [post-term (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) post-name post-vals)])
+                 (let pat-loop ([pats (reverse (pattern-ref (if (term? (term-name trm)) '|| (term-name trm)) lang))])
+                   (if (null? pats) post-term
+                       (let ([bnd (let match-loop ([bindings null]
+                                                   [pattern (car (car pats))]
+                                                   [trm post-term])
+                                    (printip-up "Matching ~a on ~a...~n" pattern trm)
+                                    (let ([res (match pattern 
+                                                 [(term _ _ _ "var" (list v)) (let ([existing-var (assoc v bindings token-equal?)])
+                                                                                ; check if binding same variable is to same value
+                                                                                (if existing-var (if (term-equal? (cdr existing-var) trm) bindings #f) 
+                                                                                    (cons (cons v trm) bindings)))]
+                                                 [(term _ _ _ n (list-rest r ... (list (term _ _ _ "varlist" (list v))))) 
+                                                  (if (and (term? trm) (>= (length (term-vals trm)) (length r)))                                                
+                                                      (let* ([b (match n 
+                                                                  [(? term?) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                                  [_ (if (token-equal? (term-name trm) n) bindings #f)])]
+                                                             [bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (take (term-vals trm) (length r)))])
+                                                        (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
+                                                 [(term _ _ _ n r) (if (and (term? trm) (eq? (length r) (length (term-vals trm))))
+                                                                       (let ([b (match n 
+                                                                                  [(term _ _ _ "var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
+                                                                                  [_ (if (token-equal? (term-name trm) n) bindings #f)])])
+                                                                         (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
+                                                 [(token _ _ _ c) (printip "Matching token ~a with ~a~n" pattern trm)
+                                                                  (if (token-equal? pattern trm) bindings #f)]
+                                                 [(? string? s) (printf "got a string ~s!!~n" s) (if (eq? s trm) bindings #f)]
+                                                 [v (printf "got into notypeland with ~s, ~a!!~n" v (string? v)) (if (eq? v trm) bindings #f)])])
+                                      (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm)
+                                      res))])
+                         (if bnd (begin (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) post-term bnd)
+                                        (let* ([res (let replace-loop ([repl (cdr [car pats])])
+                                                      (match repl 
+                                                        [(? procedure?) (apply repl lang modify-lang bnd)]
+                                                        [(term _ _ _ "unreplaced" (list v)) v]
+                                                        [(term _ _ _ "var" (list (or (? token? v) (? string? v)))) 
+                                                         (let ([val (assoc v bnd token-equal?)])
+                                                           (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
+                                                                                                             (token-chars v) (term-name post-term)) v)) 
+                                                               (cdr val)))]
+                                                        [(term l1 l2 l3 n r) 
+                                                         (term l1 l2 l3 (replace-loop n) 
+                                                               (foldr (match-lambda** 
+                                                                       [((term _ _ _ "varlist" (list (or (? token? v) (? string? v)))) r)
+                                                                        (let ([val (assoc v bnd token-equal?)])
+                                                                          (if (not val) (eprintf (make-errormessage (format "List variable ~a not found in pattern definition '~a'~n" 
+                                                                                                                            (token-chars v) (term-name trm)) v)) 
+                                                                              (append (cdr val) r)))]
+                                                                       [(v r) (cons (replace-loop v) r)]) '() r))]
+                                                        [v v]))])
+                                          (printip-dn "Replaced ~a with ~a~n" trm res)
+                                          (expand-term res lang modify-lang))) 
+                             (pat-loop (cdr pats)))))))
+               (when (*verbosep*) (pat-indent-cnt-dn)))
+             )])))
+
+
+
 
 
 (define (make-lang files patterns rules)

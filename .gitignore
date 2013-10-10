@@ -101,3 +101,19 @@ cache/functional.rules.forest,functional.patterns.forest,standard.rules.forest,s
 cache/test_algebra.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
 
 cache/test_functional.forest,test_algebra.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/core.patterns.forest,python.rules.forest,ext_forest.forest.scm
+
+cache/core.rules.forest,core.patterns.forest,python.rules.forest,ext_forest.forest.scm
+
+cache/ext_py.forest.scm
+
+cache/python.patterns.forest,standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/python.rules.forest,ext_forest.forest.scm
+
+cache/python.rules.forest,python.patterns.forest,standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,ext_forest.forest.scm
+
+cache/standard.patterns.forest,core.rules.forest,core.patterns.forest,python.rules.forest,ext_forest.forest.scm
+
+cache/standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,python.rules.forest,ext_forest.forest.scm

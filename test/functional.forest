@@ -4,13 +4,13 @@
 (import "functional.patterns.forest")
 (import "functional.rules.forest")
 
-;(termpattern 
-;  [[closure : 'fn '''cl-args] :'''args]
-;  ['fn : '''cl-args '''args])
+(termpattern 
+  [[closure : [name : 'fn] '''cl-args] :'''args]
+  ['fn : '''cl-args '''args])
+(termpattern 
+  [[closure : 'fn '''cl-args] :'''args]
+  ['fn : '''cl-args '''args])
 
-;(termpattern 
-;  [call : 'fn '''args]
-;  ['fn : '''args])
 
 {{ functional             
 
