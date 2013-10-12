@@ -90,20 +90,14 @@
     (equal? fst-str snd-str)))
 
 (define (mt name . vals)
-  (make-term #f #f #f name vals))
+  (make-term '() '() '() name vals))
 
 (define (mtk name)
-  (make-token #f #f #f name))
-
-(define (lmt f s e name . vals)
-  (make-term #f #f #f name vals))
-
-(define (lmtk f s e name)
-  (make-token #f #f #f name))
+  (make-token '() '() '() name))
 
 (define-struct memo ((post #:mutable) (taken #:mutable) (left-rec #:mutable)))
 
-(define-struct language ((files #:mutable) (depfiles #:mutable) (patterns #:mutable) (rules #:mutable) (choices #:mutable)))
+(define-struct language ((files #:mutable) (patterns #:mutable) (rules #:mutable) (choices #:mutable)))
 
 (define (grown-rec? l1 l2)
   (if (not l1) #f
@@ -258,14 +252,14 @@
                          (cons 'term (list (cons (mt "term" (mt "var" "var") (mt "varlist" "vals")) 
                                                  (match-lambda*
                                                    [(list read-lang lang (cons _ vals) (cons _ var)) 
-                                                    (let* ([new-term (term #f #f #f var vals)])
+                                                    (let* ([new-term (term '() '() '() var vals)])
                                                       (when (*verbosep*) (printip "Creating variable term ~a~n" new-term))
                                                       new-term)]))
                                            (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
                                                  (match-lambda*
                                                    [(list read-lang lang (cons _ vals) (cons _ names)) 
                                                     (let* ([name (string-append* (map any->string names))]
-                                                           [new-term (term #f #f #f (if (token? name) (token-chars name) name) vals)])
+                                                           [new-term (term '() '() '() (if (token? name) (token-chars name) name) vals)])
                                                       (when (*verbosep*) (printip "Creating term ~a~n" new-term))
                                                       new-term)]))))
                          (cons 'token (list (cons (mt "token" (mt "var" "chars")) 
@@ -348,7 +342,7 @@
 
 
 (define (make-lang files patterns rules)
-  (let ((lang (make-language files '() (make-hash) (make-hash) (make-hasheq))))
+  (let ((lang (make-language files (make-hash) (make-hash) (make-hasheq))))
     
     (for-each (lambda (a) (rule-put! (car a) (cdr a) lang)) *init-rules*)
     (for-each (lambda (a) (pattern-put! (car a) (cdr a) lang)) *init-patterns*)
@@ -423,14 +417,14 @@
 
 ;;;;;;;;;;;; write cached languages
 
-(define (write-language t port depfiles . prefs)
+(define (write-language t port . prefs)
   (define (list-body ls)
-    (cond ((pair? ls) (apply write-language (car ls) port depfiles (cons "  " prefs)) 
+    (cond ((pair? ls) (apply write-language (car ls) port (cons "  " prefs)) 
                       (when (pair? (cdr ls)) (newline port) (display (apply string-append prefs) port))
                       (list-body (cdr ls)))
           (else ls)))
   (define (term-body ls)
-    (cond ((pair? ls) (apply write-language (car ls) port depfiles prefs) 
+    (cond ((pair? ls) (apply write-language (car ls) port prefs) 
                       (when (pair? (cdr ls)) (display " " port))
                       (term-body (cdr ls)))
           (else ls)))
@@ -441,21 +435,22 @@
       (filter identity (hash-map (language-patterns t) 
                                  (lambda (k v)
                                    (let ((ikv (assoc k *init-patterns*)))
-                                     (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port depfiles "  ")
+                                     (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port "  ")
      (newline port)
      (write-language
       (filter identity (hash-map (language-rules t) 
                                  (lambda (k v)
                                    (let ((ikv (assoc k *init-rules*)))
-                                     (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port depfiles "  ")
+                                     (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port "  ")
      (display ")" port))
     ((term? t)
-	 (fprintf port "(lmt ~s ~s ~s ~s " (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles) 
-                  (term-start-pos t) (term-end-pos t) (term-name t))
+     (display "(mt " port)
+     (write (term-name t) port)
+     (display " " port)
      (term-body (term-vals t))
      (display ")" port))
     ((token? t)
-     (display "(lmtk 1 1 1 " port)
+     (display "(mtk " port)
      (write (token-chars t) port)
      (display ")" port))
     ((string? t) (write t port))
@@ -467,9 +462,9 @@
      (display ")" port))
     ((pair? t) 
      (display "(cons " port)
-     (write-language (car t) port depfiles)  
+     (write-language (car t) port)  
      (display " " port)
-     (write-language (cdr t) port depfiles)
+     (write-language (cdr t) port)
      (display ")" port))
     (else (display t port))))
 
@@ -482,16 +477,17 @@
 (define *cache-dir* "cache")
 
 (define (read-grammar infile modify-lang)
+  (printf "read-grammar ~a, files ~a~n" infile (language-files modify-lang))
   (when (or (*verbose*) (*verbosep*)) (printf "reading grammar ~a~n" infile))
-  (let* ([files (cons (path->string (search-file infile)) (language-files modify-lang))]
+  (let* ([files (cons (path->string infile) (language-files modify-lang))]
          [cache-file-name (build-path *cache-dir* 
                                       (string-append
                                        (string-join (map (lambda (f) (regexp-replace 
                                                                       "/" (regexp-replace "\\\\" f "_") "_")) files) ",") 
                                        ".cache"))]
          [deps-file-name (path-replace-suffix cache-file-name ".deps")]
-         [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"[\n\r]")))) files)])
-    (if (and *cache* (every (lambda (f) (file-more-recent cache-file-name f)) depfiles))
+         [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"\n\r")))) files)])
+    (if (and *cache* (every (lambda (f) (file-more-recent cache-file-name (search-file f))) depfiles))
         (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (eval (read port) *ns*))))) 
           (set-language-files! modify-lang files)
           (set-language-patterns! modify-lang (language-patterns cached-lang))
@@ -499,10 +495,11 @@
         (parameterize ((*verbose* #f)
                        (*verbosep* #f))
           (let* ([read-lang (parse-file infile (lambda (read-lang terms) (for-each (lambda (trm) (expand-term trm read-lang modify-lang)) terms)))]
-                [depfiles (lset-difference equal? (lset-union equal? files (language-files read-lang)) (list "core"))])
-            (call-with-output-file deps-file-name (lambda (port) (for-each (lambda (f) (displayln f port)) depfiles)) #:exists 'truncate))
+                [depfiles (lset-difference equal? (lset-union equal? files (language-files read-lang)) "core")])
+            (printf "dependent files for ~a: ~a ~s~n" files depfiles (map (lambda (x) (equal? x "core" ) depfiles "core"))
+            (call-with-output-file deps-file-name (lambda (port) (for-each (lambda (f) (displayln f port))  depfiles)) #:exists 'truncate))
           (set-language-files! modify-lang files)
-          (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port depfiles)) #:exists 'truncate)))
+          (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port)) #:exists 'truncate)))
     
     (when (or (*verbose*) (*verbosep*)) (printf "Done reading grammar ~a: ~a ~n" infile (language-files modify-lang)))))
 
@@ -514,7 +511,7 @@
       (if (file-exists? infile) infile  
           (let ([p (find (lambda (p) (file-exists? (build-path p infile))) *grammar-paths*)])
             (if p (build-path p infile)
-                (raise-user-error 'search-file "File not found: ~a, current dir: ~a~n" infile (current-directory)))))
+                (raise-user-error 'search-file "File not found: ~a~n" infile))))
       false))
 
 
@@ -711,8 +708,6 @@
 (namespace-set-variable-value! 'make-lang make-lang #t *ns*)
 (namespace-set-variable-value! 'mt mt #t *ns*)
 (namespace-set-variable-value! 'mtk mtk #t *ns*)
-(namespace-set-variable-value! 'lmt lmt #t *ns*)
-(namespace-set-variable-value! 'lmtk lmtk #t *ns*)
 
 ;;;;;;;;; main program: command line parsing
 (define *verbose* (make-parameter #f))
