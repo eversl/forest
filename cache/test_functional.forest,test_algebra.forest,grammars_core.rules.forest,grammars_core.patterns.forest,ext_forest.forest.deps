@@ -1,0 +1,7 @@
+grammars/functional.patterns.forest
+grammars/functional.rules.forest
+test/functional.forest
+test/algebra.forest
+grammars/core.rules.forest
+grammars/core.patterns.forest
+ext/forest.forest

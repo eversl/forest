@@ -4,19 +4,22 @@
 (import "functional.patterns.forest")
 (import "functional.rules.forest")
 
-;(termpattern 
-;  [[closure : 'fn '''cl-args] :'''args]
-;  ['fn : '''cl-args '''args])
+;;;;;;;; closure ;;;;;;;;;;;
 
-;(termpattern 
-;  [call : 'fn '''args]
-;  ['fn : '''args])
+(termpattern 
+  [[closure : [name : 'fn] '''cl-args] :'''args]
+  ['fn : '''cl-args '''args])
+(termpattern 
+  [[closure : 'fn '''cl-args] :'''args]
+  ['fn : '''cl-args '''args])
+
+;;;;;;;; cons ;;;;;;;;;;;
+
+(termpattern [cons : 'hd [lst : '''tl]]
+             [lst : 'hd '''tl])
+
 
 {{ functional             
-
-;function +n(n, v) = plus(n, v)
-
-;function map+n (n, lst(tl...)) = map(closure("+n", n), lst(tl...))
 
 function map+n (n, lst(tl...)) = map(function (v) = plus(n, v), lst(tl...))
 
@@ -25,24 +28,22 @@ function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
            | (fn, lst(    tl...)) = lst(tl...)
 
 
+function filter (pred, lst(hd, tl...)) = if( `pred`(hd), cons(hd, filter(pred, lst(tl...))), filter(pred, lst(tl...)))
+              | (pred, lst(    tl...)) = lst(tl...)
 
-;function +2(v) = apply(plus(two(), v))
 
-;function map+2 (lst(tl...)) = apply(map(+2(), lst(tl...)))
-;                              map(function (v) = plus(two(), 'v), lst('''tl))
+function if(boolean(pred), then, else) = `pred`(then, else)
 
-;;;;;;;; map+1 ;;;;;;;;;;;
 
-;function map+1 (lst(tl...)) = apply(map(succ(), lst(tl...)))
+function true() = boolean(function (then, else) = then)
 
-;;;;;;;; map ;;;;;;;;;;;
+function false() = boolean(function (then, else) = else)
 
-;function map (`fn`(), lst(hd, tl...)) = apply(cons(`fn`(hd), map(`fn`(), lst(tl...))))
-;           | (`fn`(), lst(    tl...)) = lst(tl...)
+
+function eq (a, a) = true()
+            
+
+
+
 }}
-
-;;;;;;;; cons ;;;;;;;;;;;
-
-(termpattern [cons : 'hd [lst : '''tl]]
-             [lst : 'hd '''tl])
 

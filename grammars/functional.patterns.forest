@@ -6,17 +6,6 @@
 (import "standard.patterns.forest")
 (import "standard.rules.forest")
 
-(termpattern 
-  [apply : 'a] 
-  'a)
-
-(termpattern 
-  [[closure : [name : 'fn] '''cl-args] :'''args]
-  ['fn : '''cl-args '''args])
-(termpattern 
-  [[closure : 'fn '''cl-args] :'''args]
-  ['fn : '''cl-args '''args])
-
 
 (termpattern 
   [functiondef : 'fname
@@ -69,10 +58,10 @@
 
 (termpattern 
    [namedanondef-xf2 : 'fname [lst : '''closurevars] [lst : '''ready]]
-   [apply : [namedanondef-xf3 : 'fname [flatten-lst : '''closurevars] [lst : '''ready]]])
+   [namedanondef-xf3 : 'fname [flatten-lst : '''closurevars] [lst : '''ready]])
 (termpattern 
    [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : [anondefcase-xf2 : [lst : '''patt] 'repl] '''cases] '''done]
-   [apply : [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : '''cases] (unexpanded (unexpanded (unexpanded [pattern : [term : 'fname '''closurevars '''patt] [apply : 'repl]])))]])
+   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : '''cases] (unexpanded (unexpanded [pattern : [term : 'fname '''closurevars '''patt] 'repl]))])
 
 (termpattern 
    [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst] '''done]
@@ -119,7 +108,7 @@
   [lst : '''elems])
 (termpattern 
   [setdiff : [lst : '''elems] [lst : 'elem '''elems2]] 
-  [apply : [setdiff : [remove-elem : 'elem [lst : '''elems]] [lst : '''elems2]]])
+  [setdiff : [remove-elem : 'elem [lst : '''elems]] [lst : '''elems2]])
 
 ;;;;;;;;;;;;;;;; remove
 
