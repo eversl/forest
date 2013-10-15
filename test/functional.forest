@@ -39,6 +39,7 @@ function true() = boolean(function (then, else) = then)
 
 function false() = boolean(function (then, else) = else)
 
+function eq1(a) = eq(a [one])
 
 function eq (a, a) = true()
             

@@ -455,9 +455,8 @@
      (term-body (term-vals t))
      (display ")" port))
     ((token? t)
-     (display "(lmtk 1 1 1 " port)
-     (write (token-chars t) port)
-     (display ")" port))
+     (fprintf port "(lmtk ~s ~s ~s ~s)" (list-index (lambda (s) (and (token-file t) (equal? s (path->string (token-file t))))) depfiles) 
+                  (token-start-pos t) (token-end-pos t) (token-chars t)))
     ((string? t) (write t port))
     ((symbol? t) (display "'" port) (write t port))
     ((char-set? t) (display "{" port) (char-set-for-each (lambda (c) (write c port) (display " " port)) t) (display "}" port))
@@ -531,7 +530,7 @@
         (format "<unknown location>: ~a~n" message)
         (let*-values ([(str) (call-with-input-file infile (lambda (in) (bytes->string/latin-1 (read-bytes (file-size infile) in))))]
                       [(line nline nchar) (find-line (regexp-split #rx"\n" str) 1 pos)]
-                      [(new-line new-nline new-nchar) (find-line (regexp-split #rx"\n" str) 1 (- new-pos 1))])
+                      [(new-line new-nline new-nchar) (find-line (regexp-split #rx"\n" str) 1 (if new-pos (- new-pos 1) (string-length str)))])
           (if (= nline new-nline) 
               (format "~a:~a: ~a~n~a~n~a~n" infile nline message line (apply string-append (string-take (regexp-replace* "[^\t ]" line " ") nchar) "^" 
                                                                              (if (> (- new-nchar 1) nchar) (list (make-string (- new-nchar nchar 1) #\-) "^") (list))))
@@ -709,8 +708,6 @@
 ;;;;;;;; define the namespace to do eval in
 (define *ns* (make-base-namespace))
 (namespace-set-variable-value! 'make-lang make-lang #t *ns*)
-(namespace-set-variable-value! 'mt mt #t *ns*)
-(namespace-set-variable-value! 'mtk mtk #t *ns*)
 (namespace-set-variable-value! 'lmt lmt #t *ns*)
 (namespace-set-variable-value! 'lmtk lmtk #t *ns*)
 

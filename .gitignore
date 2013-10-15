@@ -117,3 +117,9 @@ cache/python.rules.forest,python.patterns.forest,standard.rules.forest,standard.
 cache/standard.patterns.forest,core.rules.forest,core.patterns.forest,python.rules.forest,ext_forest.forest.scm
 
 cache/standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patterns.forest,python.rules.forest,ext_forest.forest.scm
+
+*.cache
+
+*.deps
+
+test/.idea/inspectionProfiles/Project_Default.xml
