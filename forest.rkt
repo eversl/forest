@@ -89,6 +89,8 @@
         [snd-str (if (token? snd) (token-chars snd) snd)])
     (equal? fst-str snd-str)))
 
+(define *depfiles* (list ))
+
 (define (mt name . vals)
   (make-term #f #f #f name vals))
 
@@ -96,10 +98,12 @@
   (make-token #f #f #f name))
 
 (define (lmt f s e name . vals)
-  (make-term #f #f #f name vals))
+  (and f (list-ref *depfiles* f))
+  (make-term (and f (string->path (list-ref *depfiles* f))) s e name vals))
 
 (define (lmtk f s e name)
-  (make-token #f #f #f name))
+  (and f (list-ref *depfiles* f))
+  (make-token (and f (string->path (list-ref *depfiles* f))) s e name))
 
 (define-struct memo ((post #:mutable) (taken #:mutable) (left-rec #:mutable)))
 
@@ -119,7 +123,8 @@
   (match sym 
     [(? string? sym) sym]
     [(? token? sym) (token-chars sym)]
-    [(term _ _ _ "string" (list s)) (any->string s)]))
+    [(term _ _ _ "string" (list s)) (any->string s)]
+    [_ (call-with-output-string (lambda (p) (display sym p)))]))
 
 ;;;;;;;;; grammar hash table ;;;;;;;;;;;;;;
 (define (rule-exists? sym lang)
@@ -141,9 +146,9 @@
 
 ;;;;;;; initial grammar auto-generated
 (define (load-core-lang lang) 
-  (set-language-files! lang (cons "core" (language-files lang)))
+  #;(set-language-files! lang (cons "core" (language-files lang)))
   
-  (rule-put! 'sexpr (mt "//" 
+  #;(rule-put! 'sexpr (mt "//" 
                         (mt "@" (mt "string" "null") (mt "name" "null"))
                         (mt "@" (mt "string" "^>") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^>") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
                         (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
@@ -165,25 +170,33 @@
                         (mt "@" (mt "string" "pattern") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "syntaxpattern") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
                         (mt "@" (mt "string" "string") (mt "name" "stringliteral"))
                         (mt "name" "name")) lang)
-  (rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
-  (rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
-  (rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
-  (rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
-  (rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
-  (rule-put! 'start (mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
-  (rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
-  (rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
-  (rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
-  (rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
-  (rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
-  (rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
-  (rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
-  (rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
-  (rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
-  (rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang))
-
-(define lang-num 0)
-; init
+  #;(rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
+  #;(rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
+  #;(rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
+  #;(rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
+  #;(rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
+  #;(rule-put! 'start (mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
+  #;(rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
+  #;(rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
+  #;(rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
+  #;(rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
+  #;(rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
+  #;(rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
+  #;(rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
+  #;(rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
+  #;(rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
+  #;(rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang)
+  
+  
+  
+  (let* ([files (list "bootstrap/forest.forest")]
+         [cache-file-name (build-path "bootstrap/bootstrap_forest.forest.cache")]
+         [deps-file-name (path-replace-suffix cache-file-name ".deps")]
+         [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"[\n\r]")))) files)])
+    (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (set! *depfiles* depfiles) (eval (read port) *ns*))))) 
+          (set-language-files! lang files)
+          (set-language-patterns! lang (language-patterns cached-lang))
+          (set-language-rules! lang (language-rules cached-lang)))))
 
 
 ;;;;;;;;;;; initial language definitions. must be after the struct definitions
@@ -283,10 +296,10 @@
           [(not (term? trm)) (raise-user-error 'expand-term "called with something other than a term or token: ~s" trm)]
           [(equal? (term-name trm) "unexpanded") (car (term-vals trm))] ;; TODO: change this
           [else 
-           (parameterize ([*verbosep* (if (member (term-name trm) (*verbosepats*)) #t (*verbosep*))])
+           (parameterize ([*verbosep* (if (member (any->string (term-name trm)) (*verbosepats*)) #t (*verbosep*))])
              ;(printip-up "(expand-term ~a)~n" trm)
              (begin0 
-               (let* ([post-name (expand-term (term-name trm) lang modify-lang)]
+               (let* ([post-name (begin  (expand-term (term-name trm) lang modify-lang))]
                       [post-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))]
                       [post-term (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) post-name post-vals)])
                  (let pat-loop ([pats (reverse (pattern-ref (if (term? (term-name trm)) '|| (term-name trm)) lang))])
@@ -365,15 +378,15 @@
         (eprintf "No grammar definition found for file ~a~n" infile))
     lang))
 
-(define *ext-dir* "ext")
-(define *ext-dir-list* (directory-list *ext-dir*))
+(define *ext-dirs* (list "ext" "bootstrap"))
+(define *ext-dir-list* (append-map (lambda (dir) (map (lambda (f) (build-path dir f)) (directory-list dir))) *ext-dirs*))
 (define (find-grammar-for-ext infile)
   (let* ([ext (bytes->string/latin-1 (filename-extension infile))]
-         [lst (filter (lambda (fil) (equal? ext (last (drop-right (regexp-split #rx"\\." fil) 1)))) 
+         [lst (filter (lambda (fil) (equal? ext (second (regexp-match #rx"/(.*)\\." fil)))) 
                       *ext-dir-list*)])
     (if (member infile lst) infile
         (let ((grammars (filter find-grammar-for-ext lst)))
-          (if (pair? grammars) (build-path *ext-dir* (car grammars)) #f)))))
+          (if (pair? grammars) (car grammars) #f)))))
 
 (define (prepare-language-choices exp lang) 
   (define (charset-to-try exp syms)
@@ -450,13 +463,18 @@
                                      (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port depfiles "  ")
      (display ")" port))
     ((term? t)
-	 (fprintf port "(lmt ~s ~s ~s ~s " (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles) 
+     (printf "~a, ~a~n" (term-file t) (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles))
+     (if (term-start-pos t) 
+         (fprintf port "(lmt ~s ~s ~s ~s " (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles) 
                   (term-start-pos t) (term-end-pos t) (term-name t))
+         (fprintf port "(mt ~s "  (term-name t)))
      (term-body (term-vals t))
      (display ")" port))
     ((token? t)
+     (if (token-start-pos t)
      (fprintf port "(lmtk ~s ~s ~s ~s)" (list-index (lambda (s) (and (token-file t) (equal? s (path->string (token-file t))))) depfiles) 
-                  (token-start-pos t) (token-end-pos t) (token-chars t)))
+              (token-start-pos t) (token-end-pos t) (token-chars t))
+     (fprintf port "(mtk ~s)" (token-chars t))))
     ((string? t) (write t port))
     ((symbol? t) (display "'" port) (write t port))
     ((char-set? t) (display "{" port) (char-set-for-each (lambda (c) (write c port) (display " " port)) t) (display "}" port))
@@ -491,14 +509,14 @@
          [deps-file-name (path-replace-suffix cache-file-name ".deps")]
          [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"[\n\r]")))) files)])
     (if (and *cache* (every (lambda (f) (file-more-recent cache-file-name f)) depfiles))
-        (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (eval (read port) *ns*))))) 
+        (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (set! *depfiles* depfiles) (eval (read port) *ns*))))) 
           (set-language-files! modify-lang files)
           (set-language-patterns! modify-lang (language-patterns cached-lang))
           (set-language-rules! modify-lang (language-rules cached-lang))) 
         (parameterize ((*verbose* #f)
                        (*verbosep* #f))
           (let* ([read-lang (parse-file infile (lambda (read-lang terms) (for-each (lambda (trm) (expand-term trm read-lang modify-lang)) terms)))]
-                [depfiles (lset-difference equal? (lset-union equal? files (language-files read-lang)) (list "core"))])
+                 [depfiles (lset-difference equal? (lset-union equal? files (language-files read-lang)) (list "core"))])
             (call-with-output-file deps-file-name (lambda (port) (for-each (lambda (f) (displayln f port)) depfiles)) #:exists 'truncate))
           (set-language-files! modify-lang files)
           (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port depfiles)) #:exists 'truncate)))
@@ -582,33 +600,34 @@
                 [memo (hash-ref (rule-memo exp) pos #f)])
            (if memo
                (begin 
-                 (when (*verbose*) (printi "cached ~a~n" exp))
+                 (when (and (memo-left-rec memo) (member exp path-ls)) 
+                   (set-memo-left-rec! memo (append (memo-left-rec memo) (take-while (lambda (n) (not (eq? n exp))) path-ls))))
+                 (when (*verbose*) (printi "cached ~a ~n" exp))
                  (values (memo-post memo) (memo-taken memo)))
                (if (member exp path-ls)
                    (begin
-                     (when (*verbose*) (printi "left-recursion start ~a~n" exp))
+                     (when (*verbose*) (printi "left-recursion ~a start ~a ~a~n" pos exp (take-while (lambda (n) (not (eq? n exp))) path-ls)))
                      (hash-set! (rule-memo exp) pos (make-memo #f null (take-while (lambda (n) (not (eq? n exp))) path-ls)))
                      (values #f null))
                    (let*-values ([(post taken) (parse rule pos (cons exp path-ls))]
                                  [(memo) (hash-ref (rule-memo exp) pos #f)])
-                     (if memo
-                         (begin 
-                           (let left-rec-loop ([post post] [taken taken])
-                             (when (*verbose*) (printi "left-recursion retry ~a ~a ~a ~a~n" exp post taken (memo-left-rec memo)))
-                             (hash-set! (rule-memo exp) pos (make-memo post taken (cons exp path-ls)))
-                             (for-each (lambda (n) (hash-remove! (rule-memo n) pos)) (memo-left-rec memo))
-                             (let*-values ([(new-post new-taken) (parse rule pos (cons exp path-ls))])
-                               (if new-post 
-                                   (if (> new-post post) (left-rec-loop new-post new-taken)
-                                       (begin   ;; tried one too many. use old values and retun
-                                         (when (*verbose*) (printi " left-recursion finished ~a~n" exp))
-                                         (hash-set! (rule-memo exp) pos (make-memo post taken #f))
-                                         (values post taken)))
-                                   (begin 
-                                     (when (*verbose*) (printi "left-recursion unsuccessful ~a~n" exp))
-                                     (hash-set! (rule-memo exp) pos (make-memo new-post new-taken #f))
-                                     (values new-post new-taken))))))
-                         (begin 
+                     (if memo ; base case of recursive call
+                         (let left-rec-loop ([old-post pos] [post post] [taken taken])
+                           (for-each (lambda (n) (hash-remove! (rule-memo n) pos)) (memo-left-rec memo))
+                           (if (and post (> post old-post))
+                               (begin 
+                                 (when (*verbose*) (printi "left-recursion ~a retry ~a ~a ~a ~a ~a~n" pos exp old-post post taken (memo-left-rec memo)))
+                                 (set-memo-post! memo post) (set-memo-taken! memo taken)
+                                 (let-values ([(new-post new-taken) (parse rule pos (cons exp path-ls))])
+                                   (left-rec-loop post new-post new-taken)))
+                               (if post 
+                                   (let ([memo (hash-ref (rule-memo exp) pos #f)])   ;; did not make advance. return old values
+                                     (when (*verbose*) (printi " left-recursion ~a finished ~a ~a ~a ~a~n" pos exp (memo-post memo) (memo-taken memo) path-ls))
+                                     (values (memo-post memo) (memo-taken memo)))
+                                   (begin   ;; could not match
+                                     (when (*verbose*) (printi " left-recursion ~a failed ~a ~a ~a~n" pos exp (memo-post memo) (memo-taken memo)))
+                                     (values (memo-post memo) (memo-taken memo))))))
+                         (begin ; normal case of non-recursive call
                            (hash-set! (rule-memo exp) pos (make-memo post taken #f))
                            (values post taken)))))))]
         [(term _ _ _ "string" (list exp)) 
@@ -708,6 +727,8 @@
 ;;;;;;;; define the namespace to do eval in
 (define *ns* (make-base-namespace))
 (namespace-set-variable-value! 'make-lang make-lang #t *ns*)
+(namespace-set-variable-value! 'mt mt #t *ns*)
+(namespace-set-variable-value! 'mtk mtk #t *ns*)
 (namespace-set-variable-value! 'lmt lmt #t *ns*)
 (namespace-set-variable-value! 'lmtk lmtk #t *ns*)
 

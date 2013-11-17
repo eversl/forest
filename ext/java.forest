@@ -7,6 +7,10 @@
 (import "standard.patterns.forest")
 (import "standard.rules.forest")
 
+(import "functional.patterns.forest")
+(import "functional.rules.forest")
+;(import "functional.forest")
+
 ; start parsing here
 (rule start (+ whitespace CompilationUnit endoffile))
 
@@ -122,7 +126,7 @@
 (rule BinaryExponent (+ (/ "p" "P") SignedInteger))
 
 ;; 4.1 The Kinds of Types and Values
-(rule Type (// PrimitiveType ReferenceType))
+(rule Type (/ ReferenceType PrimitiveType))
 
 ;; 4.2 Primitive Types and Values
 (rule PrimitiveType (// NumericType (@: "boolean")))
@@ -145,38 +149,44 @@
 ;; 6.5 Determining the Meaning of a Name
 (rule PackageName (@ "package-name" (seq Identifier dot)))
 
-(rule TypeName (@ "type-name" (/ (+ PackageName dot Identifier) Identifier)))
+(rule PackagePrefix (@ "package-name" (+ Identifier (* (+ dot Identifier (& (+ dot Identifier)))))))
+
+(rule TypeName (@ "type-name" (/ (+ PackagePrefix dot Identifier) Identifier)))
 
 (rule ExpressionName (@ "expression-name" (/ (+ AmbiguousName dot Identifier) Identifier)))
 
-(rule MethodName (@ "method-name" (/ (+ AmbiguousName dot Identifier) Identifier)))
+(rule MethodName (/ (+ AmbiguousName dot Identifier) 
+                    (+ (@ "this" ()) Identifier)))
 
-(rule AmbiguousName (@ "ambiguous-name" (+ Identifier (* (+ dot Identifier (& (+ dot Identifier)))))))
+;(rule AmbiguousName (@ "ambiguous-name" (+ Identifier (* (+ dot Identifier (& (+ dot Identifier)))))))
+(rule AmbiguousName (@ "ambiguous-name" (+ (/ (+ AmbiguousName dot Identifier)
+                                            Identifier) (& (+ dot Identifier)))))
+
 
 ;; 7.3 Compilation Units
-(rule CompilationUnit (+ (? (> PackageDeclaration)) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
+(rule CompilationUnit (+ (> PackageDeclaration) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
 
 (rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
 (termpattern [language : [string : 'v]] (unexpanded [import : 'v]))
 
 
-(rule PackageDeclaration (@$: "package" PackageName semicolon$))
+(rule PackageDeclaration (/ (@$: "package" PackageName semicolon$) (@ "package" ())))
 
 ;; 7.5 Import Declarations
-(rule ImportDeclaration (+ (@$: "import") (// (+ PackageName dot (@ "all" (tok "*")) semicolon$)
-                                              (+ TypeName)) semicolon$))
+(rule ImportDeclaration (+ (@ "import_" (+ (kw "import") (// (+ PackageName dot (@ "all" (tok "*")))
+                                                             (+ TypeName)) semicolon$))))
 
 ;;; 7.6 Type Declarations
 (rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
 
 ;; 8.1 Class Declaration
-(rule ClassDeclaration (@.$: (@ "modifiers" (* ClassModifier)) "class" Identifier (? Super) (? Interfaces) ClassBody))
+(rule ClassDeclaration (@.$: (@ "modifiers" (* ClassModifier)) "class" Identifier Super (? Interfaces) ClassBody))
 
 ;;; 8.1.2 Class Modifiers
 (rule ClassModifier (// (@: "public") (@: "abstract") (@: "final")))
 
 ;;; 8.1.3 Superclasses and Subclasses
-(rule Super (@$: "extends" ClassType))
+(rule Super (/ (@$: "extends" ClassType) (@ "extends" ())))
 
 ;;; 8.1.4 Superinterfaces
 (rule Interfaces (@$: "implements" (list InterfaceType)))
@@ -239,7 +249,7 @@
 (rule ConstructorModifier (// (@: "public") (@: "protected") (@: "private")))
 
 ;;; 8.6.5 Constructor Body
-(rule ConstructorBody (brackets (+ (? ExplicitConstructorInvocation) (* BlockStatement))))
+(rule ConstructorBody (braces (+ (? ExplicitConstructorInvocation) (* BlockStatement))))
 
 (rule ExplicitConstructorInvocation (// (+ (@: "this") Arguments semicolon)
                                         (+ (@: "super") Arguments semicolon)))
@@ -254,12 +264,12 @@
 (rule ExtendsInterfaces (@: "extends" (list InterfaceType)))
 
 ;;; 9.1.4 Interface Body and Member Declarations
-(rule InterfaceBody (brackets (* InterfaceMemberDeclaration)))
+(rule InterfaceBody (braces (* InterfaceMemberDeclaration)))
 
 (rule InterfaceMemberDeclaration (// ConstantDeclaration AbstractMethodDeclaration))
 
 ;; 9.3 Field (Constant) Declarations
-(rule ConstantDeclaration (+ (@ "modifiers" (* ConstantModifier)) Type VariableDeclarator))
+(rule ConstantDeclaration (+ (@ "modifiers" (* ConstantModifier)) Type VariableDeclarator semicolon))
 
 (rule ConstantModifier (// (@: "public") (@: "static") (@: "final")))
 
@@ -269,7 +279,7 @@
 (rule AbstractMethodModifier (// (@: "public") (@: "abstract")))
 
 ;; 10.6 Arrays Initializers
-(rule ArrayInitializer (braces (tr-list VariableInitializer)))
+(rule ArrayInitializer (braces (? (tr-list VariableInitializer))))
 
 ;; 14.2 Blocks
 (rule Block (@ "block" (braces (* BlockStatement))))
@@ -284,8 +294,8 @@
 ;; 14.4 Statements
 (rule Statement (// StatementWithoutTrailingSubstatement
                     LabeledStatement
-                    IfThenStatement
-                    IfThenElseStatement
+                    (/ IfThenElseStatement
+                       IfThenStatement)
                     WhileStatement
                     ForStatement))
 
@@ -316,15 +326,8 @@
 (rule LabeledStatementNoShortIf (@ "label" (+ Identifier colon StatementNoShortIf)))
 
 ;; 14.7 Expression Statements
-(rule ExpressionStatement (+ StatementExpression semicolon))
+(rule ExpressionStatement (+ Expression semicolon))
 
-(rule StatementExpression (// Assignment
-                              PreIncrementExpression
-                              PreDecrementExpression
-                              PostIncrementExpression
-                              PostDecrementExpression
-                              MethodInvocation
-                              ClassInstanceCreationExpression))
 
 ;; 14.8 The if Statement
 (rule IfThenStatement (@: "if" (parens Expression) Statement))
@@ -355,9 +358,9 @@
 
 (rule ForStatementNoShortIf (@: "for" (parens (+ (? ForInit) semicolon (? Expression) semicolon (? ForUpdate))) StatementNoShortIf))
 
-(rule ForInit (// (list StatementExpression) LocalVariableDeclaration))
+(rule ForInit (/ LocalVariableDeclaration (list Expression)))
 
-(rule ForUpdate (list StatementExpression))
+(rule ForUpdate (list Expression))
 
 ;; 14.13 The break Statement
 (rule BreakStatement (@: "break" (? Identifier) semicolon))
@@ -382,16 +385,17 @@
 (rule Finally (@: "finally" Block))
 
 ;; 15.7 Primary Expressions
-(rule Primary (// PrimaryNoNewArray ArrayCreationExpression))
-
-(rule PrimaryNoNewArray (/ FieldAccess
-                           Literal
-                           (@: "this")
-                           (parens Expression)
-                           ClassInstanceCreationExpression
-                           MethodInvocation
-                           ArrayAccess))
-
+(rule Primary (/ ArrayAccess
+                 FieldAccess
+                 MethodInvocation
+                 Literal
+                 (@: "this")
+                 (@: "super")
+                 (+ (parens Expression) (! UnaryExpressionNotPlusMinus))
+                 ClassInstanceCreationExpression
+                 ArrayCreationExpression
+                 ExpressionName))
+						  
 ;; 15.8 Class Instance Creation Expressions
 (rule ClassInstanceCreationExpression (@: "new" ClassType Arguments))
 
@@ -406,21 +410,17 @@
 (rule Dim (@ "dim" (brackets ())))
 
 ;; 15.10 Field Access Expressions
-(rule FieldAccess (@ "field-access" (// (+ Primary dot Identifier)
-                                        (+ (@: "super") dot Identifier))))
+(rule FieldAccess (@ "field-access" (+ Primary dot Identifier (! Arguments))))
 
 ;; 15.11 Method Invocation Expressions
 (rule MethodInvocation (@ "method-invocation" 
-                          (// (+ MethodName Arguments)
-                              (+ Primary dot Identifier Arguments)
-                              (+ (@: "super") dot Identifier Arguments))))
+                          (+ (/ (+ Primary dot Identifier) MethodName) Arguments)))
 
 ;; 15.12 Array Access Expressions
-(rule ArrayAccess (// (+ ExpressionName DimExpr)
-                      (+ PrimaryNoNewArray DimExpr)))
+(rule ArrayAccess (@ "array-access" (+ Primary DimExpr)))
 
 ;; 15.13 Postfix Expressions
-(rule PostfixExpression (/ PostIncrementExpression PostDecrementExpression ExpressionName Primary))
+(rule PostfixExpression (/ PostIncrementExpression PostDecrementExpression Primary))
 
 ;;; 15.13.2 Postfix Increment Operator ++
 (rule PostIncrementExpression (@ "postfix-inc" (+ PostfixExpression (oper "++"))))
@@ -519,7 +519,7 @@
                      (@ "rot-assign-expr" (+ LeftHandSide (oper ">>>=") AssignmentExpression))
                      (@ "assign-expr" (+ LeftHandSide (oper "=") AssignmentExpression))))
 
-(rule LeftHandSide (// ExpressionName FieldAccess ArrayAccess))
+(rule LeftHandSide Primary)
 
 
 ;; 15.26 Expression
@@ -531,50 +531,55 @@
 (rule ConstantExpression Expression)
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    Transformation rules for java
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    Functional transformation rules for java
 
-(termpattern [type-name : #"Object"] [Class_info : #"java" #"lang" #"Object"])
-(termpattern [type-name : #"String"] [Class_info : #"java" #"lang" #"String"])
+(termpattern [cons : 'hd [lst : '''tl]]
+             [lst : 'hd '''tl])
 
-(termpattern 
- [method : [modifiers : [public] [static]] [void] #"main" [formal-params : [array-type : 'strtype] #"args"] 
-         [block : [method-invocation : [method-name : [ambiguous-name : #"System" #"out"] #"println"] [arguments : [string : #"Hello, World"]]]]]
- [method_info : [access_flags : [public] [static]] #"main" [MethodDescriptor : [void] [Array : 'strtype]] 
-              [attributes : [Code_attribute : 
-                                            [invokevirtual : [Methodref_info : [Class_info : #"java" #"io" #"PrintStream"] #"println" [MethodDescriptor : [void] [Class_info : #"java" #"lang" #"String"]]]
-                                                           [getstatic : [Fieldref : [Class_info : #"java" #"lang" #"System"] #"out" [Class_info : #"java" #"io" #"PrintStream"]]] 
-                                                           [string : #"Hello, World"]]]]])
+{{ functional   
 
-(termpattern 
- [body : '''rest]
- [body-xf : [fields] [methods] '''rest])
+function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
+           | (fn, lst(    tl...)) = lst(tl...)
 
-(termpattern 
- [body-xf : [fields : '''fields] [methods : '''methods] [field_info : '''fld-rest] '''rest]
- [body-xf : [fields : '''fields [field_info : '''fld-rest]] [methods : '''methods] '''rest])
 
-(termpattern 
- [body-xf : [fields : '''fields] [methods : '''methods] [method_info : '''meth-rest] '''rest]
- [body-xf : [fields : '''fields] [methods : '''methods [method_info : '''meth-rest]] '''rest])
+function class (modifiers, clsname, extends, body) = typecheck(classdef(modifiers, clsname, extends, body))
 
-(termpattern 
- [class : 'modifiers 'clsname [extends : 'super] 'body]
- [class-xf : 'modifiers 'clsname 'super 'body])
+function typecheck (classdef(modifiers, clsname, extends, body(elems...))) = map("typecheck", lst(elems...))
+                 | (method (modifiers, type, name, params, block(elems...))) = map("typecheck", lst(elems...))
+                 | (method-invocation (ambiguous-name(names...), name, arguments)) = typecheck(method-invocation (disambiguate(ambiguous-name(names...)), name, arguments))
+                 | (method-invocation (access_expr, name, arguments(elems...))) = lookup(Method(typecheck(access_expr), name, map("typecheck", lst(elems...))))
+                 | (field-access (type_expr, field)) = lookup(Field(type_expr, field))
+                 | (type-name (package, name)) = lookup(Type(package, name))
 
-(termpattern 
- [class-xf : [modifiers : '''mods] 'clsname 'super [body-xf : [fields : '''fields] [methods : '''methods]]]
- [ClassFile : [Class_info : 'clsname] 'super [access_flags : '''mods] [interfaces] [fields : '''fields] 
-            [methods : [method_info : [access_flags : [public]] #"<init>" [MethodDescriptor : [void]] 
-                                    [attributes : [Code_attribute : 
-                                                                  [return : [invokespecial : [Methodref_info : 'super #"<init>" [MethodDescriptor : [void]] [this]]]]]]]
-                     '''methods]
-            [attributes]])
+                 | (field (modifiers, type, var-declarator(varname, initializer))) = and(type<=(type, typecheck(initializer)), type)
+
+                 | (string(s)) = Class_info("java", "lang", "String")
+                 | (integer(i)) = int()
+                 | (null()) = void()
+
+
+function disambiguate (ambiguous-name(ambiguous-name("System"), "out")) = field-access(Class_info("java", "lang", "System"), "out")
+
+function lookup (Type(package-name (package-name( "java"), "lang"), "System")) = Class_info("java", "lang", "System")
+              | (Field(Class_info ("java", "lang", "System"), "out")) = Class_info("java", "io", "PrintStream")
+              | (Method(Class_info("java", "io", "PrintStream"), "println", lst(Class_info("java", "lang", "String")))) = void()
+
+
+function type<= (t, t) = true()
+              | (type-name("String"), void()) = true()
+
+
+function and (val) = val
+           | (true(), rest...) = and(rest...)
+           | (rest...) = false()
+
+}}
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
-; [class : [modifiers : [public]] #"HelloWorld" [extends : [type-name : #"Object"]] 
-;   [body : [method : [modifiers : [public] [static]] [void] #"main" [formal-params : [array-type : [type-name : #"String"]] #"args"] 
-;     [block : [method-invocation : [method-name : [ambiguous-name : #"System" #"out"] #"println"] [arguments : [string : #"Hello, World"]]]]]]] 
+;[class : [modifiers : [public]] #"HelloWorld" [extends : [type-name : #"Object"]] 
+;  [body : [method : [modifiers : [public] [static]] [void] #"main" [formal-params : [array-type : [type-name : #"String"]] #"args"] 
+;    [block : [method-invocation : [ambiguous-name : [ambiguous-name : #"System"] #"out"] #"println" [arguments : [string : #"Hello, World"]]]]]]]
 ;
 ; -->
 ;
@@ -610,22 +615,3 @@
 ;    8: return
 ; 
 ; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

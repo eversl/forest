@@ -20,7 +20,7 @@
    [functiondef-xf : 'fname [lst : '''ready]]
    (+ '''ready (unexpanded [pattern : 
      [term : 'fname (unreplaced '''r)] 
-     (unexpanded (unexpanded [error : "Invalid use of functional pattern '" 'fname "'."]))])))
+     (unexpanded (unexpanded [error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]))])))
 
 (termpattern 
  [defcase-xf : 'fname [functionargs : '''args] 'res]
@@ -67,7 +67,7 @@
    [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst] '''done]
    [functionalexpr : [lst : '''closurevars] [closure : (unexpanded (unexpanded (unexpanded [pattern : 
      [term : 'fname (unreplaced '''r)] 
-     (unexpanded (unexpanded [error : "Invalid use of closure pattern '" 'fname "'."]))]))) '''closurevars]])
+     (unexpanded (unexpanded [error : "Invalid use of closure pattern '" 'fname "': " (unreplaced '''r)]))]))) '''closurevars]])
 
 (termpattern 
  [anondefcase-xf : [functionargs : '''args] 'repl]
@@ -91,6 +91,9 @@
   [listvariable : 'v] 
   [functionalexpr : [lst : [varlist : 'v]] [varlist : 'v]])
 
+(termpattern 
+  [constant : 'v] 
+  [functionalexpr : [lst] 'v])
 
 (termpattern 
   [varfunctionref : 'varname [functionargs : '''args]]

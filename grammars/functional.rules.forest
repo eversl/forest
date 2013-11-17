@@ -28,11 +28,10 @@
 (insert functionalexpr (/ (@ "functionref" (+ identifier functionargs))
                           (@ "variable" (+ identifier))))
 
-(insert functionalexpr (+ (+ (tok doublequotechar) identifier (tok doublequotechar))))
+(insert functionalexpr (@ "constant" (+ (tok doublequotechar) identifier (tok doublequotechar))))
 (insert functionalexpr (@ "varfunctionref" (+ (tok "`") identifier (tok "`") functionargs)))
 
-(insert functionalexpr (@ "anondef" (+ (kw "function") 
-	funcbody)))
+(insert functionalexpr (@ "anondef" (+ (kw "function") funcbody)))
 
 (rule functionargs (@ "functionargs" (parens (+ (* (+ functionalexpr comma)) (? (/ listvariable functionalexpr))))))
 
