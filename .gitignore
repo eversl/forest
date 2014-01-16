@@ -123,3 +123,7 @@ cache/standard.rules.forest,standard.patterns.forest,core.rules.forest,core.patt
 *.deps
 
 test/.idea/inspectionProfiles/Project_Default.xml
+
+out
+
+.cleanup

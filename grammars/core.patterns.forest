@@ -1,7 +1,7 @@
 
 ;Defines the patterns needed to read forest.peg.scm
 
-(import "core.rules.forest")
+(extend "core.rules.forest")
 
 (syntaxpattern (* 'c) (%*% (newname) 'c))
 (syntaxpattern (%*% 'n 'c) (rule 'n (/ (+ 'c 'n) ())))

@@ -1,9 +1,9 @@
 ; Definitions for patterns needed to read the java grammar definitions 
 
-(import "core.patterns.forest")
-(import "core.rules.forest")
+(extend "core.patterns.forest")
+(extend "core.rules.forest")
 
-(import "standard.rules.forest")
+(extend "standard.rules.forest")
 
 (syntaxpattern (seq 'i 's) (+ 'i (* (+ 's 'i))))
 (syntaxpattern (tr-seq 'i 's) (+ (seq 'i 's) (? 's)))

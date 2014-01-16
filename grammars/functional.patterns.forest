@@ -1,10 +1,10 @@
 ; Definitions for patterns needed to read the java grammar definitions 
 
-(import "core.patterns.forest")
-(import "core.rules.forest")
+(extend "core.patterns.forest")
+(extend "core.rules.forest")
 
-(import "standard.patterns.forest")
-(import "standard.rules.forest")
+(extend "standard.patterns.forest")
+(extend "standard.rules.forest")
 
 
 (termpattern 
@@ -19,26 +19,26 @@
 (termpattern 
    [functiondef-xf : 'fname [lst : '''ready]]
    (+ '''ready (unexpanded [pattern : 
-     [term : 'fname (unreplaced '''r)] 
+     (term 'fname (unreplaced '''r)) 
      (unexpanded (unexpanded [error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]))])))
 
 (termpattern 
  [defcase-xf : 'fname [functionargs : '''args] 'res]
- [defcase-xf : 'fname [functionargs-xf : [lst] [lst] '''args] 'res])
+ [defcase-xf : 'fname [functionargs-xf : [lst] [lst] '''args] (unexpanded (unexpanded (unexpanded 'res)))])
 
 (termpattern 
  [defcase-xf : 'fname [functionargs-xf : [lst : '''usedvars] [lst : '''args]] [functionalexpr : [lst : '''v] 'res]]
- (unexpanded [pattern : [term : 'fname '''args] 'res]))
+ (unexpanded [pattern : (term 'fname '''args) (unexpanded (unexpanded 'res))]))
 
 (termpattern 
  [functionargs-xf : [lst : '''usedvars] [lst : '''done] [functionalexpr : [lst : '''vars] 'arg] '''args]
- [functionargs-xf : [lst : '''usedvars '''vars] [lst : '''done  'arg] '''args])
+ [functionargs-xf : [lst : '''usedvars '''vars] [lst : '''done (unexpanded (unexpanded (unexpanded (unexpanded 'arg))))] '''args])
 
 
 ;;;;;;;;;;; anondef
 (termpattern 
   [anondef : '''defcases]
-  [namedanondef : (unexpanded [newname]) '''defcases])
+  [namedanondef : (unexpanded (unexpanded [newname])) '''defcases])
 
 (termpattern 
   [namedanondef : [name : 'fname] '''defcases]
@@ -81,7 +81,7 @@
 
 (termpattern 
   [functionref : 'patname [functionargs-xf : [lst : '''usedvars] [lst : '''args]]] 
-  [functionalexpr : [lst : '''usedvars] [term : 'patname '''args]])
+  [functionalexpr : [lst : '''usedvars] (unexpanded (unexpanded (unexpanded (unexpanded (unexpanded (term 'patname '''args))))))])
 
 (termpattern 
   [variable : 'v] 
@@ -102,7 +102,6 @@
 (termpattern 
   [varfunctionref : 'varname [functionargs-xf : [lst : '''usedvars] [lst : '''args]]] 
   [functionalexpr : [lst : '''usedvars] [term : [var : 'varname] '''args]])
-
 
 ;;;;;;;;;;;;;;;; setdiff
 

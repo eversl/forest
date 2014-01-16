@@ -1,15 +1,14 @@
 
 ; Syntax definition for java lang spec 1.0
 
-(import "core.patterns.forest")
-(import "core.rules.forest")
+(extend "core.forest")
 
-(import "standard.patterns.forest")
-(import "standard.rules.forest")
+(extend "standard.patterns.forest")
+(extend "standard.rules.forest")
 
-(import "functional.patterns.forest")
-(import "functional.rules.forest")
-;(import "functional.forest")
+(extend "functional.patterns.forest")
+(extend "functional.rules.forest")
+(include "functional.forest")
 
 ; start parsing here
 (rule start (+ whitespace CompilationUnit endoffile))
@@ -164,17 +163,17 @@
 
 
 ;; 7.3 Compilation Units
-(rule CompilationUnit (+ (> PackageDeclaration) (* (> LanguageDeclaration)) (* (> ImportDeclaration)) (* (> TypeDeclaration))))
+(rule CompilationUnit (+ (> PackageDeclaration) (* (> LanguageDeclaration)) (* (> extendDeclaration)) (* (> TypeDeclaration))))
 
 (rule LanguageDeclaration (@$: "language" StringLiteral semicolon$))
-(termpattern [language : [string : 'v]] (unexpanded [import : 'v]))
+(termpattern [language : [string : 'v]] (unexpanded [extend : 'v]))
 
 
 (rule PackageDeclaration (/ (@$: "package" PackageName semicolon$) (@ "package" ())))
 
-;; 7.5 Import Declarations
-(rule ImportDeclaration (+ (@ "import_" (+ (kw "import") (// (+ PackageName dot (@ "all" (tok "*")))
-                                                             (+ TypeName)) semicolon$))))
+;; 7.5 extend Declarations
+(rule extendDeclaration (+ (@$: "import" (// (+ PackageName dot (@ "all" (tok "*")))
+                                             (+ TypeName)) semicolon$)))
 
 ;;; 7.6 Type Declarations
 (rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
@@ -224,7 +223,7 @@
 
 (rule FormalParameters (@ "formal-params" (parens (? (list FormalParameter)))))
 
-(rule FormalParameter (+ Type VariableDeclaratorId))
+(rule FormalParameter (@ "param" (+ Type VariableDeclaratorId)))
 
 ;;; 8.4.3 Method Modifiers
 (rule MethodModifier (// (@: "public") (@: "protected") (@: "private") (@: "abstract") (@: "static") (@: "final") (@: "synchronized") (@: "native")))
@@ -249,7 +248,7 @@
 (rule ConstructorModifier (// (@: "public") (@: "protected") (@: "private")))
 
 ;;; 8.6.5 Constructor Body
-(rule ConstructorBody (braces (+ (? ExplicitConstructorInvocation) (* BlockStatement))))
+(rule ConstructorBody (@ "block" (braces (+ (? ExplicitConstructorInvocation) (* BlockStatement)))))
 
 (rule ExplicitConstructorInvocation (// (+ (@: "this") Arguments semicolon)
                                         (+ (@: "super") Arguments semicolon)))
@@ -279,7 +278,7 @@
 (rule AbstractMethodModifier (// (@: "public") (@: "abstract")))
 
 ;; 10.6 Arrays Initializers
-(rule ArrayInitializer (braces (? (tr-list VariableInitializer))))
+(rule ArrayInitializer (@ "array-init" (braces (+ (? (list VariableInitializer)) (? comma)))))
 
 ;; 14.2 Blocks
 (rule Block (@ "block" (braces (* BlockStatement))))
@@ -287,9 +286,9 @@
 (rule BlockStatement (// LocalVariableDeclarationStatement Statement))
 
 ;; 14.3 Local Variable Declaration Statements
-(rule LocalVariableDeclarationStatement (@ "local-var" (+ LocalVariableDeclaration semicolon)))
+(rule LocalVariableDeclarationStatement (+ LocalVariableDeclaration semicolon))
 
-(rule LocalVariableDeclaration (+ Type VariableDeclarators))
+(rule LocalVariableDeclaration (@ "local-var" (+ Type VariableDeclarators)))
 
 ;; 14.4 Statements
 (rule Statement (// StatementWithoutTrailingSubstatement
@@ -318,7 +317,7 @@
                                                TryStatement))
 
 ;; 14.5 The Empty Statement
-(rule EmptyStatement semicolon)
+(rule EmptyStatement (@ "empty-stmt" semicolon))
 
 ;; 14.6 Labeled Statements
 (rule LabeledStatement (@ "label" (+ Identifier colon Statement)))
@@ -339,9 +338,9 @@
 ;; 14.9 The switch Statement
 (rule SwitchStatement (@: "switch" (parens Expression) SwitchBlock))
 
-(rule SwitchBlock (braces (+ (* SwitchBlockStatementGroup) (* SwitchLabel))))
+(rule SwitchBlock (braces (+ (* SwitchBlockStatementGroup) (? (@ "switch-group" (+ (*1 SwitchLabel) (@ "block" ())))))))
 
-(rule SwitchBlockStatementGroup (+ (*1 SwitchLabel) (*1 BlockStatement)))
+(rule SwitchBlockStatementGroup (@ "switch-group" (+ (*1 SwitchLabel) (@ "block" (*1 BlockStatement)))))
 
 (rule SwitchLabel (// (@: "case" ConstantExpression colon) (@: "default" colon)))
 
@@ -354,7 +353,7 @@
 (rule DoStatement (@: "do" Statement (@: "while" (parens Expression)) semicolon))
 
 ;; 14.12 The for Statement
-(rule ForStatement (@: "for" (parens (+ (? ForInit) semicolon (? Expression) semicolon (? ForUpdate))) Statement))
+(rule ForStatement (@: "for" (parens (+ (@ "for-init" (? ForInit)) semicolon (@ "for-expr" (? Expression)) semicolon (@ "for-update" (? ForUpdate)))) Statement))
 
 (rule ForStatementNoShortIf (@: "for" (parens (+ (? ForInit) semicolon (? Expression) semicolon (? ForUpdate))) StatementNoShortIf))
 
@@ -533,46 +532,166 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    Functional transformation rules for java
 
-(termpattern [cons : 'hd [lst : '''tl]]
-             [lst : 'hd '''tl])
-
 {{ functional   
 
-function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
-           | (fn, lst(    tl...)) = lst(tl...)
+function class (modifiers, clsname, extends, body) = typecheck(Scope(This(), Class_info(clsname), BottomScope()), classdef(modifiers, clsname, extends, body))
+ 
+function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = map(function (el) = typecheck(e, el), lst(elems...))
+                 | (e, field (modifiers, type, decls...)) = and(map(function (var-declarator(varname, initializer)) = and(put-symbol(Field(typecheck (e, expression-name(This())), varname), type), type<=(typecheck(e, initializer), type))
+                                                                           | (var-declarator(varname)) = put-symbol(Field(typecheck (e, expression-name(This())), varname), type), lst(decls...)), type)
 
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...))) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block()))
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...), block)) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block))
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...), throws(excs...), block)) = and(typecheck(foldl(function (env, param(ptype, pname)) = 
+                         Scope(pname, ptype, env), Scope(Method(), mtype, e), lst(elems...)), block), 
+                         map(function (exc) = type<=(typecheck(e, exc), Class_info("java", "lang", "Throwable")), lst(excs...)), mtype)
+                 ;[method : [modifiers] [void] #"move" [formal-params : [param : [int] #"dx"] [param : [int] #"dy"]] [block : [add-assign-expr : [expression-name : #"x"] [expression-name : #"dx"]] [add-assign-expr : [expression-name : #"y"] [expression-name : #"dy"]]]]
+                 | (e, constructor (modifiers, name, params, block(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), void())
 
-function class (modifiers, clsname, extends, body) = typecheck(classdef(modifiers, clsname, extends, body))
+                 | (e, block(local-var(type, var-declarator(name, init)), rest...)) = and(type<=(typecheck(e, init), type), typecheck(Scope(name, type, e), block(rest...)))
+                 | (e, block(local-var(type, var-declarator(name)), rest...)) = typecheck(Scope(name, type, e), block(rest...))
+                 | (e, block(stmt, rest...)) = and(typecheck(e, stmt), typecheck(e, block(rest...)))
+                 | (e, block(rest...)) = void()
 
-function typecheck (classdef(modifiers, clsname, extends, body(elems...))) = map("typecheck", lst(elems...))
-                 | (method (modifiers, type, name, params, block(elems...))) = map("typecheck", lst(elems...))
-                 | (method-invocation (ambiguous-name(names...), name, arguments)) = typecheck(method-invocation (disambiguate(ambiguous-name(names...)), name, arguments))
-                 | (method-invocation (access_expr, name, arguments(elems...))) = lookup(Method(typecheck(access_expr), name, map("typecheck", lst(elems...))))
-                 | (field-access (type_expr, field)) = lookup(Field(type_expr, field))
-                 | (type-name (package, name)) = lookup(Type(package, name))
+                 | (e, method-invocation (class, name, arguments(elems...))) = 
+                         lookup(Method(typecheck(e, class), name, map(function (el) = typecheck(e, el), lst(elems...))))
+                 | (e, field-access (type_expr, field)) = lookup(Field(type_expr, field))
+                 | (e, type-name (package, name)) = lookup(Type(package, name))
+                 | (e, type-name (name)) = lookup(Type(name))
 
-                 | (field (modifiers, type, var-declarator(varname, initializer))) = and(type<=(type, typecheck(initializer)), type)
+                 | (e, eq-expr (expr1, expr2)) = and(type-union(typecheck(e, expr1), typecheck(e, expr2)), bool())
+                 | (e, lt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
+                 | (e, gt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
+                 | (e, lte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
+                 | (e, gte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
+                 | (e, instanceof-expr(expr1, expr2)) = and(type<=(typecheck(e, expr1), typecheck(e, expr2)), bool())
 
-                 | (string(s)) = Class_info("java", "lang", "String")
-                 | (integer(i)) = int()
-                 | (null()) = void()
+                 | (e, add-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, sub-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, mul-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, div-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, and-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, ior-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, xor-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, mod-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, lsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, rsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, rot-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, assign-expr (left, right)) = and(type<=(typecheck(e, left), typecheck(e, right)), typecheck(e, left))
 
+                 | (e, prefix-inc(expression-name(name))) = and(type<=(typecheck(e, expression-name(name)), int()), typecheck(e, expression-name(name)))  ; TODO: let
 
-function disambiguate (ambiguous-name(ambiguous-name("System"), "out")) = field-access(Class_info("java", "lang", "System"), "out")
+                 | (e, cast (type, expr))= and(type==(type, typecheck(e, expr)), typecheck(e, expr))
+                 | (e, new (type-name, arguments(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), typecheck(e, type-name))
+                 | (e, return (val)) = and(type<=(typecheck(e, val), typecheck(e, expression-name (Method()))), typecheck(e, val))   ; TODO: let
+                 | (e, return()) = and(type<=(void(), typecheck(e, expression-name (Method()))), void())
+                 | (e, label (name, block)) = typecheck(Scope(Label(name), void(), e), block)
+                 | (e, break (lbl)) = typecheck(e, expression-name(Label(lbl)))
+                 | (e, break ()) = void()
+                 | (e, continue (lbl)) = typecheck(e, expression-name(Label(lbl)))
+                 | (e, continue ()) = void()
+                 | (e, throw (expr)) = and(type<=(typecheck(e, expr), Class_info("java", "lang", "Throwable")), void())
 
-function lookup (Type(package-name (package-name( "java"), "lang"), "System")) = Class_info("java", "lang", "System")
-              | (Field(Class_info ("java", "lang", "System"), "out")) = Class_info("java", "io", "PrintStream")
+                 | (e, for (for-init(local-var(type, var-declarator(name, val))), for-expr(expr), for-update, stmt)) = 
+                         and(type<=(typecheck(Scope(name, type, e), expr), bool()), typecheck(Scope(name, type, e), stmt))  ; TODO: let
+                 | (e, while (cond, stmt)) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
+                 | (e, do (stmt, while(cond))) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
+                 | (e, switch (expr, switch-group (case (tag), block))) = and(type<=(typecheck(e, tag), typecheck(e, expr)), typecheck(e, block))
+                 | (e, if (pred, stmt)) = and(type<=(typecheck(e, pred), bool()), typecheck(e, stmt), void())
+                 | (e, try (try-block, catch(param (type, name), catch-block))) = and(typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), void())
+                 | (e, try (try-block, finally (finally-block))) = and(typecheck(e, try-block), typecheck(e, finally-block), void())
+                 | (e, try (try-block, catches...)) = and(map(function (catch(param (type, name), catch-block)) = typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), lst(catches...)), void())
+                 | (e, synchronized(expr, block)) = and(typecheck(e, expr), typecheck(e, block))
+
+                 | (Scope(name, type, e), expression-name (name)) = type
+                 | (Scope(This(), type, BottomScope()), expression-name(name)) = get-symbol(Field (type, name))
+                 | (Scope(name1, type, e), expression-name (name2)) = typecheck(e, expression-name (name2))
+
+                 | (e, ambiguous-name(name)) = or(lookup(Type(name)), typecheck(e, expression-name(name)))
+                 | (e, expression-name(class, name)) = lookup(Field(lookup(class), name))
+
+                 | (e, array-type(inner)) = array-type(inner)
+
+                 | (e, string(s)) = Class_info("java", "lang", "String")
+                 | (e, integer(i)) = byte()
+                 | (e, floating-point(f)) = float()
+                 | (e, char(c)) = char()
+                 | (e, int()) = int()
+                 | (e, array-init(vals...)) = array-type(foldl(function (t, val) = type-union(t, typecheck(e, val)), void(), lst(vals...)))
+
+                 | (e, true()) = bool()
+                 | (e, false()) = bool()
+
+                 | (e, null()) = void()
+                 | (e, empty-stmt()) = void()
+				 
+				 | (e, ambiguous-name(class, name)) = lookup(Field(lookup(class), name))
+				 
+;function disambiguate (ambiguous-name(ambiguous-name("System"), "out")) = field-access(Class_info("java", "lang", "System"), "out")
+
+function lookup (Type("System")) = Class_info("java", "lang", "System")
+              | (Type("String")) = Class_info("java", "lang", "String")
+              | (Type("Object")) = Class_info("java", "lang", "Object")
+              | (Type("Exception")) = Class_info("java", "lang", "Exception")
+              | (Type("RuntimeException")) = Class_info("java", "lang", "RuntimeException")
+              | (Type("ClassNotFoundException")) = Class_info("java", "lang", "ClassNotFoundException")
+              | (Type("Throwable")) = Class_info("java", "lang", "Throwable")
+              | (Type("Error")) = Class_info("java", "lang", "Error")
+              | (Type(package-name("java", "io"), "IOException")) = Class_info("java", "io", "IOException")
+              | (Type(package-name("java", "io"), "Serializable")) = Class_info("java", "io", "Serializable")
+              | (Type(tname)) = Class_info(tname)  ; TODO:  add package name
+
+              | (Field (Class_info("java", "lang", "System"), "out")) = Class_info("java", "io", "PrintStream")
               | (Method(Class_info("java", "io", "PrintStream"), "println", lst(Class_info("java", "lang", "String")))) = void()
+              | (Method(Class_info("java", "io", "PrintStream"), "println", lst())) = void()
+              | (Field(array-type (type-name("String")), "length")) = int()
+              | (Field(type-name(t), "System")) = false()
+              | (Field(type, Label(lab))) = false()
+
+              | (Type("args")) = false()
+              | (Field("val")) = int()
+              | (Field("str")) = Class_info("java", "lang", "String")
+              | (Field("i")) = Class_info("java", "lang", "Object")
+;              | (Field(type-name("T842is2"), "x")) = int()
+;              | (Field(type-name("T842is2"), "y")) = int()
 
 
+; type<= (t1, t2) : an expression of type t1 can be assigned to a variable of type t2
 function type<= (t, t) = true()
-              | (type-name("String"), void()) = true()
+              | (array-type(t1), array-type(t2)) = type<=(t1, t2)
+              | (t, array-type(a)) = false()
+              | (array-type(a), t) = false()
+              | (void(), t) = false()
+              | (double(), Class_info(names...)) = false()
+              | (Class_info("java", "lang", "Object"), t) = false()
+              | (t1, t2) = type<=(type-parent(t1), t2)
+              | (byte(), type-name("Object")) = false()
+              | (t, bool()) = false()
+              | (bool(), t) = false()
 
+; type-parent (tc) = tp : tp is the parent of type tc
+function type-parent (float()) = double()
+                   | (long()) = float()
+                   | (int()) = long()
+                   | (char()) = int()
+                   | (short()) = int()
+                   | (byte()) = short()
+                   | (void()) = void()
+                   | (Class_info("java", "lang", "RuntimeException")) = Class_info("java", "lang", "Exception")
+                   | (Class_info("java", "lang", "Exception")) = Class_info("java", "lang", "Throwable")
+                   | (Class_info("java", "lang", "Error")) = Class_info("java", "lang", "Throwable")
+                   | (Class_info("java", "lang", "Throwable")) = Class_info("java", "lang", "Object")
+                   | (Class_info("java", "io", "IOException")) = Class_info("java", "lang", "Exception")
+                   | (Class_info("java", "lang", "String")) = Class_info("java", "lang", "Object")
 
-function and (val) = val
-           | (true(), rest...) = and(rest...)
-           | (rest...) = false()
+function type-union (t, t) = t
+                  | (void(), t) = t
+                  | (t, void()) = t
+                  | (short(), char()) = short()
+                  | (int(), byte()) = int()
 
+function put-symbol (sym, val) = symtable-put(sym, val)
+function get-symbol (sym) = symtable-get(sym)
 }}
 
 

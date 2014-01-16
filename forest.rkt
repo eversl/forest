@@ -39,55 +39,62 @@
 
 
 ;;;;;;;;;;;;;; structs
-
+(define (term=? term1 term2 recursive-equal?)
+  (and (recursive-equal? (term-name term1) (term-name term2))
+       (recursive-equal? (term-vals term1) (term-vals term2))))
+(define (term-hash-1 term recursive-equal-hash)
+  (+ (* 97 (recursive-equal-hash (term-name term)))
+     (recursive-equal-hash (term-vals term))))
+(define (term-hash-2 term recursive-equal-hash)
+  (+ (* 97 (recursive-equal-hash (term-vals term)))
+     (recursive-equal-hash (term-name term))))
+(define (term-write t port write?)
+  (if write? (begin
+               (write-string "(mt " port) (write (term-name t) port)
+               (let ([l (term-vals t)])
+                 (unless (null? l)
+                   (write-string " " port) (write (car l) port)
+                   (for-each (lambda (e) (write-string " " port) ((if write? write display) e port)) (cdr l))))
+               (write-string ")" port))
+      (begin
+        (write-string "[" port)
+        (display (term-name t) port)
+        (let ([l (term-vals t)])
+          (unless (null? l)
+            (write-string " : " port)
+            (display (car l) port)
+            (for-each (lambda (e)
+                        (write-string " " port)
+                        ((if write? write display) e port))
+                      (cdr l))))
+        (write-string "]" port))))
 (define-struct term (file start-pos end-pos name vals)
-  #:property prop:custom-write (lambda (t port write?)
-                                 (if write? 
-                                     (begin
-                                       (write-string "(mt " port)
-                                       (write (term-name t) port)
-                                       (let ([l (term-vals t)])
-                                         (unless (null? l)
-                                           (write-string " " port)
-                                           (write (car l) port)
-                                           (for-each (lambda (e)
-                                                       (write-string " " port)
-                                                       ((if write? write display) e port))
-                                                     (cdr l))))
-                                       (write-string ")" port))
-                                     (begin
-                                       (write-string "[" port)
-                                       (display (term-name t) port)
-                                       (let ([l (term-vals t)])
-                                         (unless (null? l)
-                                           (write-string " : " port)
-                                           (display (car l) port)
-                                           (for-each (lambda (e)
-                                                       (write-string " " port)
-                                                       ((if write? write display) e port))
-                                                     (cdr l))))
-                                       (write-string "]" port)))))
+  #:methods gen:equal+hash
+  [(define equal-proc term=?)
+   (define hash-proc  term-hash-1)
+   (define hash2-proc term-hash-2)]
+  #:methods gen:custom-write [(define write-proc term-write)])
 
+(define (token=? token1 token2 recursive-equal?)
+  (recursive-equal? (token-chars token1) (token-chars token2)))
+(define (token-hash-1 token recursive-equal-hash)
+  (recursive-equal-hash (token-chars token)))
+(define (token-hash-2 token recursive-equal-hash)
+  (recursive-equal-hash (token-chars token)))
+(define (token-write t port write?)
+  (if write? 
+      (write (token-chars t) port)
+      (begin
+        (write-string "#\"" port)
+        (display (token-chars t) port)
+        (write-string "\"" port))))
 (define-struct token (file start-pos end-pos chars)
-  #:property prop:custom-write (lambda (t port write?)
-                                 (if write? 
-                                     (write (token-chars t) port)
-                                     (begin
-                                       (write-string "#\"" port)
-                                       (display (token-chars t) port)
-                                       (write-string "\"" port)))))
+  #:methods gen:equal+hash
+  [(define equal-proc token=?)
+   (define hash-proc  token-hash-1)
+   (define hash2-proc token-hash-2)]
+  #:methods gen:custom-write [(define write-proc token-write)])
 
-(define (term-equal? fst snd)
-  (or (and (term? fst) (term? snd) 
-           (token-equal? (term-name fst) (term-name snd))
-           (eq? (length (term-vals fst)) (length (term-vals snd)))
-           (andmap term-equal? (term-vals fst) (term-vals snd))) 
-      (token-equal? fst snd)))
-
-(define (token-equal? fst snd)
-  (let ([fst-str (if (token? fst) (token-chars fst) fst)]
-        [snd-str (if (token? snd) (token-chars snd) snd)])
-    (equal? fst-str snd-str)))
 
 (define *depfiles* (list ))
 
@@ -146,57 +153,14 @@
 
 ;;;;;;; initial grammar auto-generated
 (define (load-core-lang lang) 
-  #;(set-language-files! lang (cons "core" (language-files lang)))
-  
-  #;(rule-put! 'sexpr (mt "//" 
-                        (mt "@" (mt "string" "null") (mt "name" "null"))
-                        (mt "@" (mt "string" "^>") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^>") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "^=") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^=") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "^<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "^<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "$") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "$") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" ">") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" ">") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "@") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "@") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "<") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "<") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "!") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "!") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "/") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "/") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "//") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "//") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "+") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "+") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "term") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "term") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexprs")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "import") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "import") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "stringliteral")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "newname") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "newname") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "insert") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "insert") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "rule") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "rule") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "name") (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "unexpanded") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "unexpanded") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "name" "sexpr")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "pattern") (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "+" (mt "+" (mt "string" "syntaxpattern") (mt "!" (mt "name" "namechar"))) (mt "name" "whitespace")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr")) (mt "@" (mt "string" "unexpanded") (mt "name" "sexpr"))) (mt "+" (mt "string" ")") (mt "name" "whitespace"))))
-                        (mt "@" (mt "string" "string") (mt "name" "stringliteral"))
-                        (mt "name" "name")) lang)
-  #;(rule-put! 'declarations (mt "/" (mt "+" (mt "name" "declaration") (mt "name" "declarations")) (mt "null")) lang)
-  #;(rule-put! 'stringliteral (mt "+" (mt "+" (mt "name" "doublequotechar") (mt "<" (mt "name" "stringchars")) (mt "name" "doublequotechar")) (mt "name" "whitespace")) lang)
-  #;(rule-put! 'newline (mt "/" (mt "+" (mt "name" "returnchar") (mt "name" "linefeedchar")) (mt "name" "returnchar") (mt "name" "linefeedchar")) lang)
-  #;(rule-put! 'stringchars (mt "/" (mt "+" (mt "!" (mt "name" "doublequotechar")) (mt "name" "anychar") (mt "name" "stringchars")) (mt "null")) lang)
-  #;(rule-put! 'linecomment (mt "+" (mt "string" ";") (mt "name" "commentchars") (mt "name" "newline")) lang)
-  #;(rule-put! 'start (mt "+" (mt "name" "whitespace") (mt "name" "declarations") (mt "name" "endoffile")) lang)
-  #;(rule-put! 'endoffile (mt "!" (mt "name" "anychar")) lang)
-  #;(rule-put! 'namechars (mt "/" (mt "+" (mt "name" "namechar") (mt "name" "namechars")) (mt "null")) lang)
-  #;(rule-put! 'declaration (mt ">" (mt "name" "sexpr")) lang)
-  #;(rule-put! 'name (mt "//" (mt "@" (mt "string" "var") (mt "+" (mt "+" (mt "string" "'") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "varlist") (mt "+" (mt "+" (mt "string" "'''") (mt "name" "whitespace")) (mt "name" "nameliteral"))) (mt "@" (mt "string" "name") (mt "name" "nameliteral"))) lang)
-  #;(rule-put! 'null (mt "+" (mt "+" (mt "string" "(") (mt "name" "whitespace")) (mt "+" (mt "string" ")") (mt "name" "whitespace"))) lang)
-  #;(rule-put! 'nameliteral (mt "+" (mt "<" (mt "+" (mt "name" "namechar") (mt "name" "namechars"))) (mt "name" "whitespace")) lang)
-  #;(rule-put! 'commentchars (mt "/" (mt "+" (mt "!" (mt "name" "newline")) (mt "name" "anychar") (mt "name" "commentchars")) (mt "null")) lang)
-  #;(rule-put! 'sexprs (mt "/" (mt "+" (mt "name" "sexpr") (mt "name" "sexprs")) (mt "null")) lang)
-  #;(rule-put! 'namechar (mt "/" (mt "name" "letterchar") (mt "name" "digitchar") (mt "string" "$") (mt "string" "+") (mt "string" "<") (mt "string" "=") (mt "string" ">") (mt "string" "^") (mt "string" "`") (mt "string" "|") (mt "string" "~") (mt "string" "_") (mt "string" "!") (mt "string" "%") (mt "string" "&") (mt "string" "*") (mt "string" "-") (mt "string" "+") (mt "string" "?") (mt "string" ":") (mt "string" "/") (mt "string" "@") (mt "string" ".")) lang)
-  #;(rule-put! 'whitespace (mt "/" (mt "+" (mt "/" (mt "name" "whitespacechar") (mt "name" "linecomment")) (mt "name" "whitespace")) (mt "null")) lang)
-  
-  
-  
   (let* ([files (list "bootstrap/forest.forest")]
-         [cache-file-name (build-path "bootstrap/bootstrap_forest.forest.cache")]
+         [cache-file-name (build-path *forest-home* "bootstrap/bootstrap_forest.forest.cache")]
          [deps-file-name (path-replace-suffix cache-file-name ".deps")]
          [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"[\n\r]")))) files)])
     (let ((cached-lang (call-with-input-file cache-file-name (lambda (port) (set! *depfiles* depfiles) (eval (read port) *ns*))))) 
-          (set-language-files! lang files)
-          (set-language-patterns! lang (language-patterns cached-lang))
-          (set-language-rules! lang (language-rules cached-lang)))))
+      (set-language-files! lang files)
+      (set-language-patterns! lang (language-patterns cached-lang))
+      (set-language-rules! lang (language-rules cached-lang)))))
 
 
 ;;;;;;;;;;; initial language definitions. must be after the struct definitions
@@ -221,17 +185,29 @@
                       (cons 'doublequotechar #\"        )))
 
 
+(define (do-import fil lang)
+  (let ([f (any->string fil)])
+    (when (*verbosep*) (printip "Import ~s~n" f))
+    (with-handlers 
+        ([exn:fail? (lambda (exn)
+                      (eprintf (make-errormessage (exn-message exn) fil)))])
+      (read-grammar (string->path f) lang)
+      (set-language-choices! lang (make-hasheq))))
+  (mt "null"))
+
+(define *symtable* (make-hash))
+
 ; initial procedure patterns
 (define *init-patterns* (list
                          (cons 'error (list (cons (mt "error" (mt "varlist" "strs")) 
                                                   (match-lambda*
-                                                    [(list read-lang lang (cons _ strs))
+                                                    [(list read-lang lang trm (cons _ strs))
                                                      (let ([errstr (string-concatenate (map any->string strs))])
                                                        (eprintf "Error while pattern matching: ~a~nTraceback: ~n" errstr)
                                                        (raise (make-exn:fail:errorpattern errstr (current-continuation-marks))))]))))  
                          (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
                                                     (match-lambda*
-                                                      [(list read-lang lang (cons _ repl) (cons _ pat)) 
+                                                      [(list read-lang lang trm (cons _ repl) (cons _ pat)) 
                                                        (when (*verbosep*) (printip "add Pattern ~a => ~a~n" pat repl))
                                                        (let ([name (term-name pat)])
                                                          (if (term? name)
@@ -240,53 +216,66 @@
                                                          (mt "name" name))]))))
                          (cons 'rule (list (cons (mt "rule" (mt "name" (mt "varlist" "names")) (mt "var" "rule")) 
                                                  (match-lambda*
-                                                   [(list read-lang lang (cons _ rule) (cons _ names)) 
+                                                   [(list read-lang lang trm (cons _ rule) (cons _ names)) 
                                                     (let ([name (string-append* (map any->string names))]) (rule-put! name rule lang) (mt "name" name))])))) 
                          (cons 'newname (list (cons (mt "newname") 
                                                     (match-lambda*
-                                                      [(list read-lang lang) (mt "name" (symbol->string (gensym)))]))))  
-                         (cons 'import (list (cons (mt "import" (mt "var" "fil")) 
+                                                      [(list read-lang lang trm) (mt "name" (symbol->string (gensym)))]))))
+                         (cons 'extend (list (cons (mt "extend" (mt "var" "fil")) 
                                                    (match-lambda*
-                                                     [(list read-lang lang (cons _ fil)) 
-                                                      (let ([f (any->string fil)])
-                                                        (when (*verbosep*) (printip "Import ~s~n" f))
-                                                        (with-handlers 
-                                                            ([exn:fail? (lambda (exn)
-                                                                          (eprintf (make-errormessage (exn-message exn) fil)))])
-                                                          (read-grammar (string->path f) read-lang)
-                                                          (set-language-choices! read-lang (make-hasheq))))
-                                                      (mt "null")]))))
+                                                     [(list read-lang lang trm (cons _ fil)) 
+                                                      (do-import fil read-lang)]))))
+                         (cons 'include (list (cons (mt "include" (mt "var" "fil")) 
+                                                    (match-lambda*
+                                                      [(list read-lang lang trm (cons _ fil)) 
+                                                       (do-import fil lang)]))))
                          (cons 'insert (list (cons (mt "insert" (mt "name" (mt "varlist" "names")) (mt "var" "rule"))  
                                                    (match-lambda*
-                                                     [(list read-lang lang (cons _ rule) (cons _ names)) 
+                                                     [(list read-lang lang trm (cons _ rule) (cons _ names)) 
                                                       (let ([name (string-append* (map any->string names))])
                                                         (if (rule-exists? name lang) 
                                                             (let ([term (rule-get name lang)])
-                                                              (when (not (and (term? term) (token-equal? (term-name term) "//")))
+                                                              (when (not (and (term? term) (equal? (term-name term) "//")))
                                                                 (error 'Insert "insertion in something other than // : ~s -- ~s" name rule))
                                                               (when (*verbosep*) (printip "Insert ~s : ~a == ~a~n" name rule term))
-                                                              (rule-put! name (apply mt (term-name term) (lset-union! term-equal? (list rule) (term-vals term))) lang)
+                                                              (rule-put! name (apply mt (term-name term) (lset-union! equal? (list rule) (term-vals term))) lang)
                                                               rule)
                                                             (begin (rule-put! name (mt "//" rule) lang) rule)))]))))
                          (cons 'term (list (cons (mt "term" (mt "var" "var") (mt "varlist" "vals")) 
                                                  (match-lambda*
-                                                   [(list read-lang lang (cons _ vals) (cons _ var)) 
-                                                    (let* ([new-term (term #f #f #f var vals)])
+                                                   [(list read-lang lang trm (cons _ vals) (cons _ var)) 
+                                                    (let*-values ([(file start end) (cond [(term? var) (values (term-file var) (term-start-pos var) (term-end-pos var))]
+                                                                                          [(token? var) (values (token-file var) (token-start-pos var) (token-end-pos var))]
+                                                                                          [else (values #f #f #f)])]
+                                                                  [(new-term) (term file start end var vals)])
                                                       (when (*verbosep*) (printip "Creating variable term ~a~n" new-term))
                                                       new-term)]))
                                            (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
                                                  (match-lambda*
-                                                   [(list read-lang lang (cons _ vals) (cons _ names)) 
+                                                   [(list read-lang lang trm (cons _ vals) (cons _ names)) 
                                                     (let* ([name (string-append* (map any->string names))]
-                                                           [new-term (term #f #f #f (if (token? name) (token-chars name) name) vals)])
+                                                           [new-term (term (term-file trm) (term-start-pos trm) (term-end-pos trm) (if (token? name) (token-chars name) name) vals)])
                                                       (when (*verbosep*) (printip "Creating term ~a~n" new-term))
                                                       new-term)]))))
                          (cons 'token (list (cons (mt "token" (mt "var" "chars")) 
                                                   (match-lambda*
-                                                    [(list read-lang lang (cons _ tok)) 
+                                                    [(list read-lang lang trm (cons _ tok)) 
                                                      (unless (token? tok) (raise-user-error 'Token "Content of Token term must be a token, found ~a" tok))
                                                      (when (*verbosep*) (printip "Creating token ~a~n" tok))
-                                                     tok]))))))
+                                                     tok]))))
+                         (cons 'symtable-put (list (cons (mt "symtable-put" (mt "var" "key") (mt "var" "val")) 
+                                                         (match-lambda*
+                                                           [(list read-lang lang trm (cons _ val) (cons _ key))
+                                                            (printf "symtable-put ~a: ~a~n" key val) 
+                                                            (hash-set! *symtable* key val)
+                                                            val]))))
+                         (cons 'symtable-get (list (cons (mt "symtable-get" (mt "var" "key")) 
+                                                         (match-lambda*
+                                                           [(list read-lang lang trm (cons _ key))
+                                                            (printf "symtable-get ~a~n" key)
+                                                            (let ([val (hash-ref *symtable* key)])
+                                                              (printf "symtable-get ~a: ~a~n" key val)                                                   
+                                                              val)]))))))
 
 (define (expand-term trm lang modify-lang)
   ; print traceback for error pattern
@@ -299,7 +288,7 @@
            (parameterize ([*verbosep* (if (member (any->string (term-name trm)) (*verbosepats*)) #t (*verbosep*))])
              ;(printip-up "(expand-term ~a)~n" trm)
              (begin0 
-               (let* ([post-name (begin  (expand-term (term-name trm) lang modify-lang))]
+               (let* ([post-name (expand-term (term-name trm) lang modify-lang)]
                       [post-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))]
                       [post-term (make-term (term-file trm) (term-start-pos trm) (term-end-pos trm) post-name post-vals)])
                  (let pat-loop ([pats (reverse (pattern-ref (if (term? (term-name trm)) '|| (term-name trm)) lang))])
@@ -309,34 +298,34 @@
                                                    [trm post-term])
                                     ;(printip-up "Matching ~a on ~a...~n" pattern trm)
                                     (let ([res (match pattern 
-                                                 [(term _ _ _ "var" (list v)) (let ([existing-var (assoc v bindings token-equal?)])
+                                                 [(term _ _ _ "var" (list v)) (let ([existing-var (assoc v bindings equal?)])
                                                                                 ; check if binding same variable is to same value
-                                                                                (if existing-var (if (term-equal? (cdr existing-var) trm) bindings #f) 
+                                                                                (if existing-var (if (equal? (cdr existing-var) trm) bindings #f) 
                                                                                     (cons (cons v trm) bindings)))]
                                                  [(term _ _ _ n (list-rest r ... (list (term _ _ _ "varlist" (list v))))) 
                                                   (if (and (term? trm) (>= (length (term-vals trm)) (length r)))                                                
                                                       (let* ([b (match n 
                                                                   [(? term?) (match-loop bindings (term-name pattern) (term-name trm))]
-                                                                  [_ (if (token-equal? (term-name trm) n) bindings #f)])]
+                                                                  [_ (if (equal? (term-name trm) n) bindings #f)])]
                                                              [bnd (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (take (term-vals trm) (length r)))])
                                                         (if bnd (cons (cons v (drop (term-vals trm) (length r))) bnd) #f)) #f)]
                                                  [(term _ _ _ n r) (if (and (term? trm) (eq? (length r) (length (term-vals trm))))
                                                                        (let ([b (match n 
                                                                                   [(term _ _ _ "var" (list v)) (match-loop bindings (term-name pattern) (term-name trm))]
-                                                                                  [_ (if (token-equal? (term-name trm) n) bindings #f)])])
+                                                                                  [_ (if (equal? (term-name trm) n) bindings #f)])])
                                                                          (foldl (lambda (pat val b) (if b (match-loop b pat val) #f)) b r (term-vals trm))) #f)]
-                                                 [(token _ _ _ c) (if (token-equal? pattern trm) bindings #f)]
+                                                 [(token _ _ _ c) (if (equal? pattern trm) bindings #f)]
                                                  [(? string? s) (printf "got a string ~s!!~n" s) (if (eq? s trm) bindings #f)]
                                                  [v (printf "got into notypeland with ~s, ~a!!~n" v (string? v)) (if (eq? v trm) bindings #f)])])
                                       ;(printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm)
                                       res))])
-                         (if bnd (begin (printip-up "Matched pattern ~a on ~a using ~a~n" (car (car pats)) post-term bnd)
+                         (if bnd (begin (printip-up "Matched ~a to pattern ~a using ~a~n" post-term (car (car pats)) bnd)
                                         (let* ([res (let replace-loop ([repl (cdr [car pats])])
                                                       (match repl 
-                                                        [(? procedure?) (apply repl lang modify-lang bnd)]
+                                                        [(? procedure?) (apply repl lang modify-lang trm bnd)]
                                                         [(term _ _ _ "unreplaced" (list v)) v]
                                                         [(term _ _ _ "var" (list (or (? token? v) (? string? v)))) 
-                                                         (let ([val (assoc v bnd token-equal?)])
+                                                         (let ([val (assoc v bnd equal?)])
                                                            (if (not val) (eprintf (make-errormessage (format "Variable ~a not found in pattern definition '~a'~n" 
                                                                                                              (token-chars v) (term-name post-term)) v)) 
                                                                (cdr val)))]
@@ -344,7 +333,7 @@
                                                          (term l1 l2 l3 (replace-loop n) 
                                                                (foldr (match-lambda** 
                                                                        [((term _ _ _ "varlist" (list (or (? token? v) (? string? v)))) r)
-                                                                        (let ([val (assoc v bnd token-equal?)])
+                                                                        (let ([val (assoc v bnd equal?)])
                                                                           (if (not val) (eprintf (make-errormessage (format "List variable ~a not found in pattern definition '~a'~n" 
                                                                                                                             (token-chars v) (term-name trm)) v)) 
                                                                               (append (cdr val) r)))]
@@ -378,11 +367,13 @@
         (eprintf "No grammar definition found for file ~a~n" infile))
     lang))
 
-(define *ext-dirs* (list "ext" "bootstrap"))
-(define *ext-dir-list* (append-map (lambda (dir) (map (lambda (f) (build-path dir f)) (directory-list dir))) *ext-dirs*))
+(define *forest-home* (path->directory-path (or (getenv "FOREST_HOME") (let-values ([(b n m) (split-path (simplify-path (path->complete-path (find-system-path 'run-file) (find-system-path 'orig-dir))))]) b))))
+(define *ext-dirs* (list "ext" "bootstrap" ))
+(define *ext-dir-list* (append-map (lambda (dir) (directory-list #:build? #t (build-path *forest-home* dir))) *ext-dirs*))
 (define (find-grammar-for-ext infile)
   (let* ([ext (bytes->string/latin-1 (filename-extension infile))]
-         [lst (filter (lambda (fil) (equal? ext (second (regexp-match #rx"/(.*)\\." fil)))) 
+         [lst (filter (lambda (fil) (equal? ext (let-values ([(b n m) (split-path fil)]) 
+                                                  (string-take (path-element->string n) (or (string-index-right (path-element->string n) #\.) 0))))) 
                       *ext-dir-list*)])
     (if (member infile lst) infile
         (let ((grammars (filter find-grammar-for-ext lst)))
@@ -463,7 +454,6 @@
                                      (if (and ikv (eq? (cdr ikv) v)) #f (cons k v)))))) port depfiles "  ")
      (display ")" port))
     ((term? t)
-     (printf "~a, ~a~n" (term-file t) (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles))
      (if (term-start-pos t) 
          (fprintf port "(lmt ~s ~s ~s ~s " (list-index (lambda (s) (and (term-file t) (equal? s (path->string (term-file t))))) depfiles) 
                   (term-start-pos t) (term-end-pos t) (term-name t))
@@ -472,9 +462,9 @@
      (display ")" port))
     ((token? t)
      (if (token-start-pos t)
-     (fprintf port "(lmtk ~s ~s ~s ~s)" (list-index (lambda (s) (and (token-file t) (equal? s (path->string (token-file t))))) depfiles) 
-              (token-start-pos t) (token-end-pos t) (token-chars t))
-     (fprintf port "(mtk ~s)" (token-chars t))))
+         (fprintf port "(lmtk ~s ~s ~s ~s)" (list-index (lambda (s) (and (token-file t) (equal? s (path->string (token-file t))))) depfiles) 
+                  (token-start-pos t) (token-end-pos t) (token-chars t))
+         (fprintf port "(mtk ~s)" (token-chars t))))
     ((string? t) (write t port))
     ((symbol? t) (display "'" port) (write t port))
     ((char-set? t) (display "{" port) (char-set-for-each (lambda (c) (write c port) (display " " port)) t) (display "}" port))
@@ -496,15 +486,19 @@
 
 (define *file-cache* (make-hash))
 
-(define *cache-dir* "cache")
+(define *cache-dir* (build-path *forest-home* "cache"))
 
 (define (read-grammar infile modify-lang)
   (when (or (*verbose*) (*verbosep*)) (printf "reading grammar ~a~n" infile))
+  
   (let* ([files (cons (path->string (search-file infile)) (language-files modify-lang))]
+         [short-files (map (lambda (f) (if (string-prefix? (path->string *forest-home*) f) 
+                                           (string-drop f (string-length (path->string *forest-home*)))
+                                           f)) (cons (path->string (search-file infile)) (language-files modify-lang)))]
          [cache-file-name (build-path *cache-dir* 
                                       (string-append
                                        (string-join (map (lambda (f) (regexp-replace 
-                                                                      "/" (regexp-replace "\\\\" f "_") "_")) files) ",") 
+                                                                      "/" (regexp-replace* "\\\\" f "_") "_")) short-files) ",") 
                                        ".cache"))]
          [deps-file-name (path-replace-suffix cache-file-name ".deps")]
          [depfiles (or (and (file-exists? deps-file-name) (call-with-input-file deps-file-name (lambda (port) (string-split (port->string port) #px"[\n\r]")))) files)])
@@ -517,14 +511,14 @@
                        (*verbosep* #f))
           (let* ([read-lang (parse-file infile (lambda (read-lang terms) (for-each (lambda (trm) (expand-term trm read-lang modify-lang)) terms)))]
                  [depfiles (lset-difference equal? (lset-union equal? files (language-files read-lang)) (list "core"))])
-            (call-with-output-file deps-file-name (lambda (port) (for-each (lambda (f) (displayln f port)) depfiles)) #:exists 'truncate))
-          (set-language-files! modify-lang files)
-          (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port depfiles)) #:exists 'truncate)))
+            (call-with-output-file deps-file-name (lambda (port) (for-each (lambda (f) (displayln f port)) depfiles)) #:exists 'truncate)
+            (set-language-files! modify-lang files)
+            (call-with-output-file cache-file-name (lambda (port) (write-language modify-lang port depfiles)) #:exists 'truncate))))
     
     (when (or (*verbose*) (*verbosep*)) (printf "Done reading grammar ~a: ~a ~n" infile (language-files modify-lang)))))
 
 
-(define *grammar-paths* (map string->path (list "." "grammars")))
+(define *grammar-paths* (list (build-path *forest-home* "grammars")))
 
 (define (search-file infile)
   (if (path-string? infile)
@@ -545,7 +539,7 @@
                 [(infile) (search-file file)])
     (if (not infile) 
         ; infile not known
-        (format "<unknown location>: ~a~n" message)
+        (format "<unknown location>: ~a (~a)~n" message term-or-token)
         (let*-values ([(str) (call-with-input-file infile (lambda (in) (bytes->string/latin-1 (read-bytes (file-size infile) in))))]
                       [(line nline nchar) (find-line (regexp-split #rx"\n" str) 1 pos)]
                       [(new-line new-nline new-nchar) (find-line (regexp-split #rx"\n" str) 1 (if new-pos (- new-pos 1) (string-length str)))])

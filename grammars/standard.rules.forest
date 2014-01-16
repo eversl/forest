@@ -1,6 +1,6 @@
 ; Definitions for syntax extensions needed to read the patterns 
-(import "core.patterns.forest")
-(import "core.rules.forest")
+(extend "core.patterns.forest")
+(extend "core.rules.forest")
 
 ;(pattern (seq 'i 's) (+ 'i (* (+ 's 'i))))
 (insert sexpr (@ "seq" (+ (parens (+ (sym "seq") sexpr sexpr)))))
@@ -61,3 +61,6 @@
 
 ;(syntaxpattern (oper 'c) (tok (+ 'c (! operatorchar))))
 (insert sexpr (@ "oper" (parens (+ (sym "oper") sexpr))))
+
+(insert sexpr (@ "term" (parens (+ (sym "term") sexpr sexprs))))
+(insert sexpr (@ "unexpanded" (@ "term" (parens (+ (sym "uterm") sexpr sexprs)))))

@@ -1,8 +1,7 @@
-(import "core.patterns.forest")
-(import "core.rules.forest")
+(extend "core.forest")
 
-(import "functional.patterns.forest")
-(import "functional.rules.forest")
+(extend "functional.patterns.forest")
+(extend "functional.rules.forest")
 
 ;;;;;;;; closure ;;;;;;;;;;;
 
@@ -25,18 +24,31 @@ function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
            | (fn, lst(    tl...)) = lst(tl...)
 
 
-function filter (pred, lst(hd, tl...)) = if( `pred`(hd), cons(hd, filter(pred, lst(tl...))), filter(pred, lst(tl...)))
+function filter (pred, lst(hd, tl...)) = if_( `pred`(hd), cons(hd, filter(pred, lst(tl...))), filter(pred, lst(tl...)))
               | (pred, lst(    tl...)) = lst(tl...)
 
+function foldl (fn, init, lst(hd, tl...)) = foldl(fn, `fn`(init, hd), lst(tl...))
+             | (fn, init, lst()) = init
 
-function if(boolean(pred), then, else) = `pred`(then, else)
+function foldr (fn, init, lst(hd, tl...)) = `fn`(hd, foldr(fn, init, lst(tl...)))
+             | (fn, init, lst()) = init
 
 
-function true() = boolean(function (then, else) = then)
-
-function false() = boolean(function (then, else) = else)
+function if_ (true(), unexpanded(then), unexpanded(else)) = then
+          | (false(), unexpanded(then), unexpanded(else)) = else
 
 function eq (a, a) = true()            
 
+function and () = true()
+           | (val) = val
+           | (false(), rest...) = false()
+           | (true, rest...) = and(rest...)
+
+function or () = false()
+          | (false(), rest...) = or(rest...)
+          | (val, rest...) = val
+
+function seq (val) = val
+           | (val, rest...) = seq(rest...)
 }}
 

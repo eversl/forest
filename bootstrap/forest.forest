@@ -45,7 +45,8 @@
              (@ "rule" (+ "(" whitespace "rule" (! namechar) whitespace name sexpr ")" whitespace))
              (@ "insert" (+ "(" whitespace "insert" (! namechar) whitespace name sexpr ")" whitespace))
              (@ "newname" (+ "(" whitespace "newname" (! namechar) whitespace ")" whitespace))
-             (@ "import" (+ "(" whitespace "import" (! namechar) whitespace stringliteral ")" whitespace))
+             (@ "extend" (+ "(" whitespace "extend" (! namechar) whitespace stringliteral ")" whitespace))
+             (@ "include" (+ "(" whitespace "include" (! namechar) whitespace stringliteral ")" whitespace))
              (@ "term" (+ "(" whitespace "term" (! namechar) whitespace name sexprs ")" whitespace))
              
              (@ "+" (+ "(" whitespace "+" (! namechar) whitespace sexprs ")" whitespace))
