@@ -38,9 +38,10 @@
 
 (rule sexpr (// 
              name
-             (@ "string" stringliteral)
+             (@ "token" stringliteral)
              (@ "unexpanded" (+ "(" whitespace "unexpanded" (! namechar) whitespace sexpr ")" whitespace))
              (@ "pattern" (+ "(" whitespace "syntaxpattern" (! namechar) whitespace (@ "unexpanded" sexpr) (@ "unexpanded" sexpr) ")" whitespace))
+             (@ "token" (+ "(" whitespace "token" (! namechar) whitespace sexprs ")" whitespace))
                         
              (@ "rule" (+ "(" whitespace "rule" (! namechar) whitespace name sexpr ")" whitespace))
              (@ "insert" (+ "(" whitespace "insert" (! namechar) whitespace name sexpr ")" whitespace))

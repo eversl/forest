@@ -1,0 +1,17 @@
+(extend "core.forest")
+
+(extend "functional.patterns.forest")
+(extend "functional.rules.forest")
+
+
+{{ functional             
+
+function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
+           | (fn, lst(    tl...)) = lst(tl...)
+
+
+function if_ (false(), then, else_) = else_
+           | (pred, then, else_) = then
+
+}}
+

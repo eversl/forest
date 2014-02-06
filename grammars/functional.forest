@@ -34,8 +34,8 @@ function foldr (fn, init, lst(hd, tl...)) = `fn`(hd, foldr(fn, init, lst(tl...))
              | (fn, init, lst()) = init
 
 
-function if_ (true(), unexpanded(then), unexpanded(else)) = then
-          | (false(), unexpanded(then), unexpanded(else)) = else
+function if_ (true(), unexpanded(then), unexpanded(else_)) = then
+          | (false(), unexpanded(then), unexpanded(else_)) = else_
 
 function eq (a, a) = true()            
 

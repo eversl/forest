@@ -20,18 +20,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;; functional terms
 
-(rule funcbody (seq (@ "defcase" (+ functionargs (tok "=") functionalexpr)) (tok "|")))
-
 (insert functional (@ "functiondef" (+ (kw "function") identifier funcbody)))
+
+(rule funcbody (seq (@ "defcase" (+ functionargs (tok "=") conditionalexpr)) (tok "|")))
+
+(rule functionargs (@ "functionargs" (parens (+ (* (+ conditionalexpr comma)) (? (/ listvariable conditionalexpr))))))
+
+(rule listvariable (@ "listvariable" (+ identifier (tok "..."))))
+
+(rule conditionalexpr (/ (@ "ifexpr" (+ functionalexpr (kw "if") conditionalexpr (kw "else") functionalexpr))
+                          functionalexpr))
 
 (insert functionalexpr (/ (@ "functionref" (+ identifier functionargs))
                           (@ "variable" (+ identifier))))
 
-(insert functionalexpr (@ "constant" (+ (tok doublequotechar) identifier (tok doublequotechar))))
+(insert functionalexpr (@ "constant" (+ stringliteral)))
 (insert functionalexpr (@ "varfunctionref" (+ (tok "`") identifier (tok "`") functionargs)))
 
 (insert functionalexpr (@ "anondef" (+ (kw "function") funcbody)))
-
-(rule functionargs (@ "functionargs" (parens (+ (* (+ functionalexpr comma)) (? (/ listvariable functionalexpr))))))
-
-(rule listvariable (@ "listvariable" (+ identifier (tok "..."))))

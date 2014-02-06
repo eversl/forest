@@ -535,7 +535,7 @@
 {{ functional   
 
 function class (modifiers, clsname, extends, body) = typecheck(Scope(This(), Class_info(clsname), BottomScope()), classdef(modifiers, clsname, extends, body))
- 
+
 function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = map(function (el) = typecheck(e, el), lst(elems...))
                  | (e, field (modifiers, type, decls...)) = and(map(function (var-declarator(varname, initializer)) = and(put-symbol(Field(typecheck (e, expression-name(This())), varname), type), type<=(typecheck(e, initializer), type))
                                                                            | (var-declarator(varname)) = put-symbol(Field(typecheck (e, expression-name(This())), varname), type), lst(decls...)), type)
@@ -543,12 +543,14 @@ function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = 
                  | (e, method (modifiers, mtype, mname, formal-params(elems...))) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block()))
                  | (e, method (modifiers, mtype, mname, formal-params(elems...), block)) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block))
                  | (e, method (modifiers, mtype, mname, formal-params(elems...), throws(excs...), block)) = and(typecheck(foldl(function (env, param(ptype, pname)) = 
-                         Scope(pname, ptype, env), Scope(Method(), mtype, e), lst(elems...)), block), 
-                         map(function (exc) = type<=(typecheck(e, exc), Class_info("java", "lang", "Throwable")), lst(excs...)), mtype)
-                 ;[method : [modifiers] [void] #"move" [formal-params : [param : [int] #"dx"] [param : [int] #"dy"]] [block : [add-assign-expr : [expression-name : #"x"] [expression-name : #"dx"]] [add-assign-expr : [expression-name : #"y"] [expression-name : #"dy"]]]]
+                                                                                                                                         Scope(pname, ptype, env), 
+                                                                                                                                Scope(Method(), mtype, e), 
+                                                                                                                                lst(elems...)), block), 
+                                                                                                                map(function (exc) = type<=(typecheck(e, exc), Class_info("java", "lang", "Throwable")), lst(excs...)), 
+                                                                                                                mtype)
                  | (e, constructor (modifiers, name, params, block(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), void())
 
-                 | (e, block(local-var(type, var-declarator(name, init)), rest...)) = and(type<=(typecheck(e, init), type), typecheck(Scope(name, type, e), block(rest...)))
+                 | (e, block(local-var(type, var-declarator(name, init)), rest...)) = and(warn-type<=(typecheck(e, init), type), typecheck(Scope(name, type, e), block(rest...)))
                  | (e, block(local-var(type, var-declarator(name)), rest...)) = typecheck(Scope(name, type, e), block(rest...))
                  | (e, block(stmt, rest...)) = and(typecheck(e, stmt), typecheck(e, block(rest...)))
                  | (e, block(rest...)) = void()
@@ -577,7 +579,7 @@ function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = 
                  | (e, lsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
                  | (e, rsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
                  | (e, rot-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
-                 | (e, assign-expr (left, right)) = and(type<=(typecheck(e, left), typecheck(e, right)), typecheck(e, left))
+                 | (e, assign-expr (left, right)) = and(warn-type<=(typecheck(e, left), typecheck(e, right)), typecheck(e, left))
 
                  | (e, prefix-inc(expression-name(name))) = and(type<=(typecheck(e, expression-name(name)), int()), typecheck(e, expression-name(name)))  ; TODO: let
 
@@ -597,7 +599,7 @@ function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = 
                  | (e, while (cond, stmt)) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
                  | (e, do (stmt, while(cond))) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
                  | (e, switch (expr, switch-group (case (tag), block))) = and(type<=(typecheck(e, tag), typecheck(e, expr)), typecheck(e, block))
-                 | (e, if (pred, stmt)) = and(type<=(typecheck(e, pred), bool()), typecheck(e, stmt), void())
+                 | (e, if-kw (pred, stmt)) = and(type<=(typecheck(e, pred), bool()), typecheck(e, stmt), void())
                  | (e, try (try-block, catch(param (type, name), catch-block))) = and(typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), void())
                  | (e, try (try-block, finally (finally-block))) = and(typecheck(e, try-block), typecheck(e, finally-block), void())
                  | (e, try (try-block, catches...)) = and(map(function (catch(param (type, name), catch-block)) = typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), lst(catches...)), void())
@@ -655,6 +657,7 @@ function lookup (Type("System")) = Class_info("java", "lang", "System")
 ;              | (Field(type-name("T842is2"), "x")) = int()
 ;              | (Field(type-name("T842is2"), "y")) = int()
 
+function warn-type<= (t1, t2) = if_ (type<= (t1, t2), true(), seq(message(t1, "error: incompatible types"), false()))
 
 ; type<= (t1, t2) : an expression of type t1 can be assigned to a variable of type t2
 function type<= (t, t) = true()
@@ -692,6 +695,7 @@ function type-union (t, t) = t
 
 function put-symbol (sym, val) = symtable-put(sym, val)
 function get-symbol (sym) = symtable-get(sym)
+function message(loc, strs...) = message_(loc, strs...)
 }}
 
 
