@@ -11,3 +11,5 @@
              
 (syntaxpattern (? 'c) (/ 'c ()))
 (syntaxpattern (& 'c) (! (! 'c)))
+
+(syntaxpattern ! 'c (unexpanded (unexpanded 'c)))

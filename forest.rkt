@@ -217,7 +217,6 @@
                          (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
                                                     (match-lambda*
                                                       [(list read-lang lang trm (cons _ repl) (cons _ pat)) 
-                                                       (printi "add Pattern ~a => ~a~n" pat repl)
                                                        (printip "add Pattern ~a => ~a~n" pat repl)
                                                        (let ([name (term-name pat)])
                                                          (if (term? name)
@@ -257,16 +256,18 @@
                                                     (let*-values ([(file start end) (cond [(term? var) (values (term-file var) (term-start-pos var) (term-end-pos var))]
                                                                                           [(token? var) (values (token-file var) (token-start-pos var) (token-end-pos var))]
                                                                                           [else (values #f #f #f)])]
-                                                                  [(new-term) (term file start end var vals)])
+                                                                  [(new-term) (term file start end var vals)]
+                                                                  [(unexpanded) (mt "unexpanded" new-term)])
                                                       (when (*verbosep*) (printip "Creating variable term ~a~n" new-term))
-                                                      new-term)]))
+                                                      unexpanded)]))
                                            (cons (mt "term" (mt "name" (mt "varlist" "names")) (mt "varlist" "vals")) 
                                                  (match-lambda*
                                                    [(list read-lang lang trm (cons _ vals) (cons _ names)) 
                                                     (let* ([name (string-append* (map any->string names))]
-                                                           [new-term (term (term-file trm) (term-start-pos trm) (term-end-pos trm) (if (token? name) (token-chars name) name) vals)])
+                                                           [new-term (term (term-file trm) (term-start-pos trm) (term-end-pos trm) (if (token? name) (token-chars name) name) vals)]
+                                                           [unexpanded (mt "unexpanded" new-term)])
                                                       (when (*verbosep*) (printip "Creating term ~a~n" new-term))
-                                                      new-term)]))))
+                                                      unexpanded)]))))
                          (cons 'token (list (cons (mt "token" (mt "varlist" "strings")) 
                                                   (match-lambda*
                                                     [(list read-lang lang trm (cons _ strings))
@@ -299,7 +300,7 @@
           [(token-equal? (term-name trm) "unexpanded") (car (term-vals trm))] ;; TODO: change this
           [else 
            (parameterize ([*verbosep* (if (member (any->string (term-name trm)) (*verbosepats*)) #t (*verbosep*))])
-             ;(printip-up "(expand-term ~a)~n" trm)
+             (printip-up "(expand-term ~a)~n" trm)
              (begin0 
                (let* ([post-name (expand-term (term-name trm) lang modify-lang)]
                       [post-vals (map (lambda (t) (expand-term t lang modify-lang)) (term-vals trm))]
@@ -309,7 +310,7 @@
                        (let ([bnd (let match-loop ([bindings null]
                                                    [pattern (car (car pats))]
                                                    [trm post-term])
-                                    (printip-up "Matching ~a on ~a...~n" pattern trm)
+                                    ;(printip-up "Matching ~a on ~a...~n" pattern trm)
                                     (let ([res (match pattern 
                                                  [(term _ _ _ "var" (list v)) (let ([existing-var (assoc v bindings equal?)])
                                                                                 ; check if binding same variable is to same value
@@ -330,7 +331,7 @@
                                                  [(token _ _ _ c) (if (equal? pattern trm) bindings #f)]
                                                  [(? string? s) (printf "got a string ~s!!~n" s) (if (eq? s trm) bindings #f)]
                                                  [v (printf "got into notypeland with ~s, ~a!!~n" v (string? v)) (if (eq? v trm) bindings #f)])])
-                                      (printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm)
+                                      ;(printip-dn "Matched ~a : ~a on ~a...~n" res pattern trm)
                                       res))])
                          (if bnd (begin (printip-up "Matched ~a to pattern ~a using ~a~n" post-term (car (car pats)) bnd)
                                         (let* ([res (let replace-loop ([repl (cdr [car pats])])
@@ -355,7 +356,7 @@
                                           (printip-dn "Replaced ~a with ~a~n" trm res)
                                           (expand-term res lang modify-lang))) 
                              (pat-loop (cdr pats)))))))
-               ;(when (*verbosep*) (pat-indent-cnt-dn))
+               (when (*verbosep*) (pat-indent-cnt-dn))
                ))])))
 
 

@@ -6,39 +6,41 @@
 (extend "standard.patterns.forest")
 (extend "standard.rules.forest")
 
+(termpattern 
+  [functiondef : 'fname '''defcases]
+  [functiondef-xf : 'fname ![lst] ![lst : '''defcases]])
 
 (termpattern 
-  [functiondef : 'fname
-    '''defcases]
-  [functiondef-xf : 'fname [lst] '''defcases])
+ [functiondef-xf : 'fname [lst : '''ready] [lst : [defcase : 'patt 'repl] '''defcases]]
+ [functiondef-xf2 : 'fname [defcase-xf : 'fname !'patt !'repl] ![lst : '''ready] ![lst : '''defcases]])
 
 (termpattern 
- [functiondef-xf : 'fname [lst : '''ready] [defcase : 'patt 'repl] '''defcases]
- [functiondef-xf : 'fname [lst : '''ready [defcase-xf : 'fname 'patt 'repl]] '''defcases])
+ [functiondef-xf2 : 'fname 'case [lst : '''ready] [lst : '''defcases]]
+ [functiondef-xf : 'fname ![lst : '''ready 'case] ![lst : '''defcases]])
 
 (termpattern 
-   [functiondef-xf : 'fname [lst : '''ready]]
-   (+ '''ready (unexpanded [pattern : 
-     (term 'fname (unreplaced '''r)) 
-     (unexpanded (unexpanded [error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]))])))
+   [functiondef-xf : 'fname [lst : '''ready] [lst]]
+   (+ '''ready [pattern : 
+     !(term 'fname (unreplaced '''r)) 
+     ![error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]]))
 
 (termpattern 
  [defcase-xf : 'fname [functionargs : '''args] 'res]
- [defcase-xf : 'fname [functionargs-xf : [lst] [lst] '''args] (unexpanded (unexpanded (unexpanded 'res)))])
+ [defcase-xf : 'fname [functionargs-xf : ![lst] ![lst] ![lst : '''args]] !'res])
 
 (termpattern 
- [defcase-xf : 'fname [functionargs-xf : [lst : '''usedvars] [lst : '''args]] [functionalexpr : [lst : '''v] 'res]]
- (unexpanded [pattern : (term 'fname '''args) (unexpanded (unexpanded 'res))]))
+ [defcase-xf : 'fname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]] [functionalexpr : [lst : '''v] 'res]]
+ ![pattern : !(term 'fname '''args) !'res])
 
 (termpattern 
- [functionargs-xf : [lst : '''usedvars] [lst : '''done] [functionalexpr : [lst : '''vars] 'arg] '''args]
- [functionargs-xf : [lst : '''usedvars '''vars] [lst : '''done (unexpanded (unexpanded (unexpanded (unexpanded 'arg))))] '''args])
+ [functionargs-xf : [lst : '''usedvars] [lst : '''done] [lst : [functionalexpr : [lst : '''vars] 'arg] '''args]]
+ [functionargs-xf : ![lst : '''usedvars '''vars] ![lst : '''done 'arg] ![lst : '''args]])
 
 
 ;;;;;;;;;;; anondef
 (termpattern 
   [anondef : '''defcases]
-  [namedanondef : (unexpanded (unexpanded [newname])) '''defcases])
+  [namedanondef : ![newname] '''defcases])
 
 (termpattern 
   [namedanondef : [name : 'fname] '''defcases]
@@ -53,7 +55,7 @@
    [namedanondef-xf2 : 'fname [lst] [lst] '''ready])
 
 (termpattern 
-   [namedanondef-xf2 : 'fname [lst : '''closurevars] [lst : '''ready] [anondefcase-xf : [functionargs-xf : 'pattvars 'funargs] [functionalexpr : 'replvars 'repl]] '''defcases]
+   [namedanondef-xf2 : 'fname [lst : '''closurevars] [lst : '''ready] [anondefcase-xf : [functionargs-xf : 'pattvars 'funargs [lst]] [functionalexpr : 'replvars 'repl]] '''defcases]
    [namedanondef-xf2 : 'fname [lst : '''closurevars [setdiff : 'replvars 'pattvars]] [lst : '''ready [anondefcase-xf2 : 'funargs 'repl]] '''defcases])
 
 (termpattern 
@@ -61,7 +63,7 @@
    [namedanondef-xf3 : 'fname [flatten-lst : '''closurevars] [lst : '''ready]])
 (termpattern 
    [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : [anondefcase-xf2 : [lst : '''patt] 'repl] '''cases] '''done]
-   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : '''cases] (unexpanded (unexpanded [pattern : [term : 'fname '''closurevars '''patt] 'repl]))])
+   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : '''cases] ![pattern : [term : 'fname '''closurevars '''patt] 'repl]])
 
 (termpattern 
    [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst] '''done]
@@ -71,37 +73,37 @@
 
 (termpattern 
  [anondefcase-xf : [functionargs : '''args] 'repl]
- [anondefcase-xf : [functionargs-xf : [lst] [lst] '''args] 'repl])
+ [anondefcase-xf : [functionargs-xf : ![lst] ![lst] ![lst : '''args]] 'repl])
 
 
 ;;;;;;;;;;;; functionref
 (termpattern 
   [functionref : 'patname [functionargs : '''args]] 
-  [functionref : 'patname [functionargs-xf : [lst] [lst] '''args]])
+  [functionref : 'patname [functionargs-xf : ![lst] ![lst] ![lst : '''args]]])
 
 (termpattern 
-  [functionref : 'patname [functionargs-xf : [lst : '''usedvars] [lst : '''args]]] 
-  [functionalexpr : [lst : '''usedvars] (unexpanded (unexpanded (unexpanded (unexpanded (unexpanded (term 'patname '''args))))))])
+  [functionref : 'patname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]]] 
+  ![functionalexpr : [lst : '''usedvars] (term 'patname '''args)])
 
 (termpattern 
   [variable : 'v] 
-  [functionalexpr : [lst : [var : 'v]] [var : 'v]])
+  ![functionalexpr : [lst : [var : 'v]] [var : 'v]])
 
 (termpattern 
   [listvariable : 'v] 
-  [functionalexpr : [lst : [varlist : 'v]] [varlist : 'v]])
+  ![functionalexpr : [lst : [varlist : 'v]] [varlist : 'v]])
 
 (termpattern 
   [constant : 'v] 
-  [functionalexpr : [lst] 'v])
+  ![functionalexpr : [lst] 'v])
 
 (termpattern 
   [varfunctionref : 'varname [functionargs : '''args]]
-  [varfunctionref : 'varname [functionargs-xf : [lst] [lst] '''args]])
+  [varfunctionref : 'varname [functionargs-xf : ![lst] ![lst] ![lst : '''args]]])
 
 (termpattern 
-  [varfunctionref : 'varname [functionargs-xf : [lst : '''usedvars] [lst : '''args]]] 
-  [functionalexpr : [lst : '''usedvars] [term : [var : 'varname] '''args]])
+  [varfunctionref : 'varname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]]] 
+  ![functionalexpr : [lst : '''usedvars] [term : [var : 'varname] '''args]])
 
 ;;;;;;;;;;;;;;;; setdiff
 

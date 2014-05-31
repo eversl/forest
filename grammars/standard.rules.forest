@@ -63,4 +63,3 @@
 (insert sexpr (@ "oper" (parens (+ (sym "oper") sexpr))))
 
 (insert sexpr (@ "term" (parens (+ (sym "term") sexpr sexprs))))
-(insert sexpr (@ "unexpanded" (@ "term" (parens (+ (sym "uterm") sexpr sexprs)))))
