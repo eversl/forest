@@ -8,136 +8,138 @@
 
 (termpattern 
   [functiondef : 'fname '''defcases]
-  [functiondef-xf : 'fname ![lst] ![lst : '''defcases]])
+  [functiondef-xf : 'fname ~[lst] ~[lst : '''defcases]])
 
 (termpattern 
  [functiondef-xf : 'fname [lst : '''ready] [lst : [defcase : 'patt 'repl] '''defcases]]
- [functiondef-xf2 : 'fname [defcase-xf : 'fname !'patt !'repl] ![lst : '''ready] ![lst : '''defcases]])
+ [functiondef-xf2 : 'fname [defcase-xf : 'fname ~'patt ~'repl] ~[lst : '''ready] ~[lst : '''defcases]])
 
 (termpattern 
  [functiondef-xf2 : 'fname 'case [lst : '''ready] [lst : '''defcases]]
- [functiondef-xf : 'fname ![lst : '''ready 'case] ![lst : '''defcases]])
+ [functiondef-xf : 'fname ~[lst : '''ready 'case] ~[lst : '''defcases]])
 
 (termpattern 
    [functiondef-xf : 'fname [lst : '''ready] [lst]]
    (+ '''ready [pattern : 
-     !(term 'fname (unreplaced '''r)) 
-     ![error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]]))
+     ~(term 'fname (unreplaced '''r)) 
+     ~[error : "Invalid use of functional pattern '" 'fname "': " (unreplaced '''r)]]))
 
 (termpattern 
  [defcase-xf : 'fname [functionargs : '''args] 'res]
- [defcase-xf : 'fname [functionargs-xf : ![lst] ![lst] ![lst : '''args]] !'res])
+ [defcase-xf : 'fname [functionargs-xf : ~[lst] ~[lst] ~[lst : '''args]] ~'res])
 
 (termpattern 
  [defcase-xf : 'fname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]] [functionalexpr : [lst : '''v] 'res]]
- ![pattern : !(term 'fname '''args) !'res])
+ ~[pattern : ~(term 'fname '''args) ~'res])
 
 (termpattern 
  [functionargs-xf : [lst : '''usedvars] [lst : '''done] [lst : [functionalexpr : [lst : '''vars] 'arg] '''args]]
- [functionargs-xf : ![lst : '''usedvars '''vars] ![lst : '''done 'arg] ![lst : '''args]])
+ [functionargs-xf : ~[lst : '''usedvars '''vars] ~[lst : '''done 'arg] ~[lst : '''args]])
 
 
 ;;;;;;;;;;; anondef
 (termpattern 
   [anondef : '''defcases]
-  [namedanondef : ![newname] '''defcases])
+  [namedanondef : [newname] ~[lst : '''defcases]])
 
 (termpattern 
-  [namedanondef : [name : 'fname] '''defcases]
-  [namedanondef-xf : 'fname [lst] '''defcases])
+  [namedanondef : [name : 'fname] [lst : '''defcases]]
+  [namedanondef-xf : 'fname ~[lst] ~[lst] ~[lst : '''defcases]])
 
 (termpattern 
- [namedanondef-xf : 'fname [lst : '''ready] [defcase : 'patt 'repl] '''defcases]
- [namedanondef-xf : 'fname [lst : '''ready [anondefcase-xf : 'patt 'repl]] '''defcases])
+  [namedanondef-xf : 'fname [lst : '''closurevars] [lst : '''ready] [lst : [defcase : 'patt 'repl] '''defcases]]
+  [namedanondef-xf2 : 'fname ~[lst : '''closurevars] [anondefcase-xf : ~'patt ~'repl] ~[lst : '''ready] ~[lst : '''defcases]])
 
 (termpattern 
-   [namedanondef-xf : 'fname [lst : '''ready]]
-   [namedanondef-xf2 : 'fname [lst] [lst] '''ready])
+  [namedanondef-xf2 : 'fname [lst : '''closurevars] [anondefcase-xf : [functionargs-xf : 'pattvars 'funargs [lst]] [functionalexpr : 'replvars 'repl]] [lst : '''ready] [lst : '''defcases]]
+  [namedanondef-xf : 'fname ~[lst : '''closurevars [setdiff : ~'replvars ~'pattvars]] ~[lst : '''ready [anondefcase-xf2 : 'funargs 'repl]] ~[lst : '''defcases]])
 
 (termpattern 
-   [namedanondef-xf2 : 'fname [lst : '''closurevars] [lst : '''ready] [anondefcase-xf : [functionargs-xf : 'pattvars 'funargs [lst]] [functionalexpr : 'replvars 'repl]] '''defcases]
-   [namedanondef-xf2 : 'fname [lst : '''closurevars [setdiff : 'replvars 'pattvars]] [lst : '''ready [anondefcase-xf2 : 'funargs 'repl]] '''defcases])
+  [namedanondef-xf : 'fname [lst : '''closurevars] [lst : '''ready] [lst]]
+  [namedanondef-xf3 : 'fname [flatten-lst : '''closurevars] ~[lst : '''ready] ~[null]])
 
 (termpattern 
-   [namedanondef-xf2 : 'fname [lst : '''closurevars] [lst : '''ready]]
-   [namedanondef-xf3 : 'fname [flatten-lst : '''closurevars] [lst : '''ready]])
-(termpattern 
-   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : [anondefcase-xf2 : [lst : '''patt] 'repl] '''cases] '''done]
-   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : '''cases] ![pattern : [term : 'fname '''closurevars '''patt] 'repl]])
+  [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst : [anondefcase-xf2 : [lst : '''patt] 'repl] '''cases] 'done]
+  [namedanondef-xf3 : 'fname ~[lst : '''closurevars] ~[lst : '''cases] [pattern : [term : 'fname '''closurevars '''patt] ~'repl]])  
+
 
 (termpattern 
-   [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst] '''done]
-   [functionalexpr : [lst : '''closurevars] [closure : (unexpanded (unexpanded (unexpanded [pattern : 
+  [namedanondef-xf3 : 'fname [lst : '''closurevars] [lst] 'done]
+  [functionalexpr : ~[lst : '''closurevars] [closure : [pattern : 
      [term : 'fname (unreplaced '''r)] 
-     (unexpanded (unexpanded [error : "Invalid use of closure pattern '" 'fname "': " (unreplaced '''r)]))]))) '''closurevars]])
+     ~[error : "Invalid use of closure pattern '" 'fname "': " (unreplaced '''r)]] '''closurevars]])
 
 (termpattern 
  [anondefcase-xf : [functionargs : '''args] 'repl]
- [anondefcase-xf : [functionargs-xf : ![lst] ![lst] ![lst : '''args]] 'repl])
+ [anondefcase-xf : [functionargs-xf : ~[lst] ~[lst] ~[lst : '''args]] ~'repl])
 
 
 ;;;;;;;;;;;; functionref
 (termpattern 
   [functionref : 'patname [functionargs : '''args]] 
-  [functionref : 'patname [functionargs-xf : ![lst] ![lst] ![lst : '''args]]])
+  [functionref : 'patname [functionargs-xf : ~[lst] ~[lst] ~[lst : '''args]]])
 
 (termpattern 
   [functionref : 'patname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]]] 
-  ![functionalexpr : [lst : '''usedvars] (term 'patname '''args)])
+  ~[functionalexpr : [lst : '''usedvars] (term 'patname '''args)])
 
 (termpattern 
   [variable : 'v] 
-  ![functionalexpr : [lst : [var : 'v]] [var : 'v]])
+  ~[functionalexpr : [lst : [var : 'v]] [var : 'v]])
 
 (termpattern 
   [listvariable : 'v] 
-  ![functionalexpr : [lst : [varlist : 'v]] [varlist : 'v]])
+  ~[functionalexpr : [lst : [varlist : 'v]] [varlist : 'v]])
 
 (termpattern 
   [constant : 'v] 
-  ![functionalexpr : [lst] 'v])
+  ~[functionalexpr : [lst] 'v])
 
 (termpattern 
   [varfunctionref : 'varname [functionargs : '''args]]
-  [varfunctionref : 'varname [functionargs-xf : ![lst] ![lst] ![lst : '''args]]])
+  [varfunctionref : 'varname [functionargs-xf : ~[lst] ~[lst] ~[lst : '''args]]])
 
 (termpattern 
   [varfunctionref : 'varname [functionargs-xf : [lst : '''usedvars] [lst : '''args] [lst]]] 
-  ![functionalexpr : [lst : '''usedvars] [term : [var : 'varname] '''args]])
+  ~[functionalexpr : [lst : '''usedvars] [[var : 'varname] : '''args]])
+
+(termpattern 
+  [ifexpr : [functionalexpr : [lst : '''thenvars] 'thenexpr] [functionalexpr : [lst : '''condvars] 'condexpr] [functionalexpr : [lst : '''elsevars] 'elseexpr]]
+  ~[functionalexpr : [lst : '''condvars '''thenvars '''elsevars] [doif : 'condexpr ~'thenexpr ~'elseexpr]])
 
 ;;;;;;;;;;;;;;;; setdiff
 
 (termpattern 
   [setdiff : [lst : '''elems] [lst]] 
-  [lst : '''elems])
+  ~[lst : '''elems])
 (termpattern 
   [setdiff : [lst : '''elems] [lst : 'elem '''elems2]] 
-  [setdiff : [remove-elem : 'elem [lst : '''elems]] [lst : '''elems2]])
+  [setdiff : [remove-elem : ~'elem ~[lst : '''elems]] ~[lst : '''elems2]])
 
 ;;;;;;;;;;;;;;;; remove
 
 (termpattern 
   [remove-elem : 'elem [lst : '''elems]] 
-  [remove-elem-xf : [lst] 'elem [lst : '''elems]])
+  [remove-elem-xf : ~[lst] ~'elem ~[lst : '''elems]])
 (termpattern 
   [remove-elem-xf : [lst : '''done] 'elem [lst : 'elem '''elems]] 
-  [remove-elem-xf : [lst : '''done] 'elem [lst : '''elems]])
+  [remove-elem-xf : ~[lst : '''done] ~'elem ~[lst : '''elems]])
 (termpattern 
   [remove-elem-xf : [lst : '''done] 'elem [lst : 'elem2 '''elems]] 
-  [remove-elem-xf : [lst : '''done 'elem2] 'elem [lst : '''elems]])
+  [remove-elem-xf : ~[lst : '''done 'elem2] ~'elem ~[lst : '''elems]])
 (termpattern 
   [remove-elem-xf : [lst : '''done] 'elem [lst]] 
-  [lst : '''done])
+  ~[lst : '''done])
 
 ;;;;;;;;;; flatten-lst
 
 (termpattern 
   [flatten-lst : [lst : '''lst1] [lst : '''lst2] '''rest] 
-  [flatten-lst : [lst : '''lst1 '''lst2] '''rest])
+  [flatten-lst : ~[lst : '''lst1 '''lst2] '''rest])
 (termpattern 
   [flatten-lst : [lst : '''lst1]] 
-  [lst : '''lst1])
+  ~[lst : '''lst1])
 (termpattern 
   [flatten-lst : [lst]] 
-  [lst])
+  ~[lst])
 

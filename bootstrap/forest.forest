@@ -16,7 +16,7 @@
 (rule name (// (@ "var" (+ "'" whitespace nameliteral)) 
                (@ "varlist" (+ "'''" whitespace nameliteral))
                (@ "name" nameliteral)))
-(rule namechar (/ letterchar digitchar "$" "<" "=" ">" "^" "`" "|" "~" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
+(rule namechar (/ letterchar digitchar "$" "<" "=" ">" "^" "`" "|" "_" "!" "%" "&" "*" "-" "+" "?" ":" "/" "@" "."))
 (rule namechars (/ (+ namechar namechars) ()))
 (rule nameliteral (+ (< (+ namechar namechars)) whitespace))
 

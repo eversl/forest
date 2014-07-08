@@ -26,10 +26,12 @@
 
 (syntaxpattern (body-braces$ 'c) (@ "body" (+ (tok "{") ($ (+ 'c (tok "}")) "could not find '}' closing the definition body"))))
 
-(syntaxpattern (@: 'n '''r) (@ 'n (+ (kw 'n) '''r)))
-(syntaxpattern (@$: 'n '''r) (@ 'n (+ (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
-(syntaxpattern (@.: 'f 'n '''r) (@ 'n (+ 'f (kw 'n) '''r)))
-(syntaxpattern (@.$: 'f 'n '''r) (@ 'n (+ 'f (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
+(syntaxpattern (@: 'n '''r) (kw@ 'n (+ (kw 'n) '''r)))
+(syntaxpattern (@$: 'n '''r) (kw@ 'n (+ (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
+(syntaxpattern (@.: 'f 'n '''r) (kw@ 'n (+ 'f (kw 'n) '''r)))
+(syntaxpattern (@.$: 'f 'n '''r) (kw@ 'n (+ 'f (kw 'n) ($ (+ '''r) 'n ": statement not completed"))))
+
+(syntaxpattern (kw@ 'n '''r) (@ (token "kw-" 'n) '''r))
 
 (syntaxpattern (kw 'c) (tok (insert keyword (+ 'c (! letterordigit)))))
-(syntaxpattern (oper 'c) (tok (+ 'c (! operatorchar))))
+(syntaxpattern (oper 'c) (tok 'c))

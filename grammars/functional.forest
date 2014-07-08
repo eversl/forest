@@ -12,6 +12,14 @@
   [[closure : 'fn '''cl-args] :'''args]
   ['fn : '''cl-args '''args])
 
+(termpattern
+  [doif : [false] 'thenexpr 'elseexpr]
+  'elseexpr)  
+
+(termpattern
+  [doif : 'true 'thenexpr 'elseexpr]
+  'thenexpr)  
+
 ;;;;;;;; cons ;;;;;;;;;;;
 
 (termpattern [cons : 'hd [lst : '''tl]]
@@ -33,9 +41,9 @@ function foldl (fn, init, lst(hd, tl...)) = foldl(fn, `fn`(init, hd), lst(tl...)
 function foldr (fn, init, lst(hd, tl...)) = `fn`(hd, foldr(fn, init, lst(tl...)))
              | (fn, init, lst()) = init
 
+function reduce (fn, lst(hd)) = hd
+              | (fn, lst(hd, tl...)) = `fn`(hd, reduce(fn, lst(tl...)))
 
-function if_ (true(), unexpanded(then), unexpanded(else_)) = then
-          | (false(), unexpanded(then), unexpanded(else_)) = else_
 
 function eq (a, a) = true()            
 

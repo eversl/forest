@@ -139,11 +139,7 @@
 ;; 4.3 Reference Types and Values
 (rule ReferenceType (/ (@ "array-type" (+ Type (brackets ()))) ClassOrInterfaceType))
 
-(rule ClassOrInterfaceType (// ClassType InterfaceType))
-
-(rule ClassType TypeName)
-
-(rule InterfaceType TypeName)
+(rule ClassOrInterfaceType TypeName)
 
 ;; 6.5 Determining the Meaning of a Name
 (rule PackageName (@ "package-name" (seq Identifier dot)))
@@ -155,7 +151,7 @@
 (rule ExpressionName (@ "expression-name" (/ (+ AmbiguousName dot Identifier) Identifier)))
 
 (rule MethodName (/ (+ AmbiguousName dot Identifier) 
-                    (+ (@ "this" ()) Identifier)))
+                    (+ Identifier)))
 
 ;(rule AmbiguousName (@ "ambiguous-name" (+ Identifier (* (+ dot Identifier (& (+ dot Identifier)))))))
 (rule AmbiguousName (@ "ambiguous-name" (+ (/ (+ AmbiguousName dot Identifier)
@@ -172,8 +168,8 @@
 (rule PackageDeclaration (/ (@$: "package" PackageName semicolon$) (@ "package" ())))
 
 ;; 7.5 extend Declarations
-(rule extendDeclaration (+ (@$: "import" (// (+ PackageName dot (@ "all" (tok "*")))
-                                             (+ TypeName)) semicolon$)))
+(rule extendDeclaration (+ (@$: "import" (/ (+ PackageName dot (@ "all" (tok "*")))
+                                            (+ TypeName)) semicolon$)))
 
 ;;; 7.6 Type Declarations
 (rule TypeDeclaration (// ClassDeclaration InterfaceDeclaration semicolon))
@@ -185,10 +181,10 @@
 (rule ClassModifier (// (@: "public") (@: "abstract") (@: "final")))
 
 ;;; 8.1.3 Superclasses and Subclasses
-(rule Super (/ (@$: "extends" ClassType) (@ "extends" ())))
+(rule Super (/ (@$: "extends" ClassOrInterfaceType) (@ "extends" ())))
 
 ;;; 8.1.4 Superinterfaces
-(rule Interfaces (@$: "implements" (list InterfaceType)))
+(rule Interfaces (@$: "implements" (list ClassOrInterfaceType)))
 
 ;;; 8.1.5 Class Body and Member Declarations
 (rule ClassBody (body-braces$ (* ClassBodyDeclaration)))
@@ -229,7 +225,7 @@
 (rule MethodModifier (// (@: "public") (@: "protected") (@: "private") (@: "abstract") (@: "static") (@: "final") (@: "synchronized") (@: "native")))
 
 ;;; 8.4.4 Method Throws
-(rule Throws (@: "throws" (list ClassType)))
+(rule Throws (@: "throws" (list ClassOrInterfaceType)))
 
 ;;; 8.4.5 Method Body
 (rule MethodBody (// Block semicolon))
@@ -260,7 +256,7 @@
 (rule InterfaceModifier (// (@: "public") (@: "abstract")))
 
 ;;; 9.1.3 Superinterfaces
-(rule ExtendsInterfaces (@: "extends" (list InterfaceType)))
+(rule ExtendsInterfaces (@: "extends" (list ClassOrInterfaceType)))
 
 ;;; 9.1.4 Interface Body and Member Declarations
 (rule InterfaceBody (braces (* InterfaceMemberDeclaration)))
@@ -340,7 +336,7 @@
 
 (rule SwitchBlock (braces (+ (* SwitchBlockStatementGroup) (? (@ "switch-group" (+ (*1 SwitchLabel) (@ "block" ())))))))
 
-(rule SwitchBlockStatementGroup (@ "switch-group" (+ (*1 SwitchLabel) (@ "block" (*1 BlockStatement)))))
+(rule SwitchBlockStatementGroup (@ "switch-group" (+ SwitchLabel (@ "block" (* BlockStatement)))))
 
 (rule SwitchLabel (// (@: "case" ConstantExpression colon) (@: "default" colon)))
 
@@ -377,7 +373,7 @@
 (rule SynchronizedStatement (@: "synchronized" (parens Expression) Block))
 
 ;; 14.18 The try statement
-(rule TryStatement (@: "try" Block (// (*1 CatchClause) (+ (* CatchClause) Finally))))
+(rule TryStatement (@: "try" Block (// (+ (*1 CatchClause) (! Finally)) (+ (* CatchClause) Finally))))
 
 (rule CatchClause (@: "catch" (parens FormalParameter) Block))
 
@@ -396,7 +392,7 @@
                  ExpressionName))
 						  
 ;; 15.8 Class Instance Creation Expressions
-(rule ClassInstanceCreationExpression (@: "new" ClassType Arguments))
+(rule ClassInstanceCreationExpression (@: "new" ClassOrInterfaceType Arguments))
 
 (rule Arguments (@ "arguments" (parens (? Expressions))))
 
@@ -428,11 +424,11 @@
 (rule PostDecrementExpression (@ "postfix-dec" (+ PostfixExpression (oper "--"))))
 
 ;; 15.14 Unary Operators
-(rule UnaryExpression (// PreIncrementExpression
-                          PreDecrementExpression
-                          (@ "pos-expr" (+ (oper "+") UnaryExpression))
-                          (@ "neg-expr" (+ (oper "-") UnaryExpression))
-                          UnaryExpressionNotPlusMinus))
+(rule UnaryExpression (/ PreIncrementExpression
+                         PreDecrementExpression
+                        (@ "pos-expr" (+ (oper "+") UnaryExpression))
+                        (@ "neg-expr" (+ (oper "-") UnaryExpression))
+                        UnaryExpressionNotPlusMinus))
 
 (rule PreIncrementExpression (@ "prefix-inc" (+ (oper "++") UnaryExpression)))
 
@@ -534,39 +530,48 @@
 
 {{ functional   
 
-function class (modifiers, clsname, extends, body) = typecheck(Scope(This(), Class_info(clsname), BottomScope()), classdef(modifiers, clsname, extends, body))
+function kw-for (for-init(local-vars...), for-expr(expr), for-update(upd...), stmt) = block(local-vars..., kw-while (expr, block(stmt, upd...))) 
+              | (for-init, for-expr(), for-update, stmt) = kw-for(for-init, for-expr(kw-true()), for-update, stmt)
+
+
+function kw-class (modifiers, clsname, extends, body) = kw-class (modifiers, clsname, extends, kw-implements(), body)
+                | (modifiers, clsname, extends, kw-implements(interfaces...), body) = typecheck(Scope(This(), Class_info(clsname), BottomScope()), classdef(modifiers, clsname, extends, body))
 
 function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = map(function (el) = typecheck(e, el), lst(elems...))
-                 | (e, field (modifiers, type, decls...)) = and(map(function (var-declarator(varname, initializer)) = and(put-symbol(Field(typecheck (e, expression-name(This())), varname), type), type<=(typecheck(e, initializer), type))
-                                                                           | (var-declarator(varname)) = put-symbol(Field(typecheck (e, expression-name(This())), varname), type), lst(decls...)), type)
+                 | (e, field (modifiers, type, decls...)) = and(map(function (var-declarator(varname, initializer)) = and(put-symbol(Field(typecheck (e, expression-name(This())), varname), resolve-type(type)), type<=(typecheck(e, initializer), type))
+                                                                           | (var-declarator(varname)) = put-symbol(Field(typecheck (e, expression-name(This())), varname), resolve-type(type)), lst(decls...)), type)
 
-                 | (e, method (modifiers, mtype, mname, formal-params(elems...))) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block()))
-                 | (e, method (modifiers, mtype, mname, formal-params(elems...), block)) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), throws(), block))
-                 | (e, method (modifiers, mtype, mname, formal-params(elems...), throws(excs...), block)) = and(typecheck(foldl(function (env, param(ptype, pname)) = 
-                                                                                                                                         Scope(pname, ptype, env), 
-                                                                                                                                Scope(Method(), mtype, e), 
+                 | (e, method (modifiers, mtype, mname, formal-params, kw-throws(excs...))) = typecheck (e, method (modifiers, mtype, mname, formal-params, kw-throws(excs...), block()))
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...))) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), kw-throws(), block()))
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...), block)) = typecheck (e, method (modifiers, mtype, mname, formal-params(elems...), kw-throws(), block))
+                 | (e, method (modifiers, mtype, mname, formal-params(elems...), kw-throws(excs...), block)) = and(put-symbol(Method(typecheck (e, expression-name(This())), mname, map(function (param(ptype, pname)) = resolve-type(ptype), 
+                                                                                                                                                                                     lst(elems...))), resolve-type(mtype)), 
+                                                                                                                typecheck(foldl(function (env, param(ptype, pname)) = 
+                                                                                                                                         Scope(pname, resolve-type(ptype), env), 
+                                                                                                                                Scope(Method(), resolve-type(mtype), e), 
                                                                                                                                 lst(elems...)), block), 
-                                                                                                                map(function (exc) = type<=(typecheck(e, exc), Class_info("java", "lang", "Throwable")), lst(excs...)), 
-                                                                                                                mtype)
-                 | (e, constructor (modifiers, name, params, block(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), void())
+                                                                                                                map(function (exc) = type<=(resolve-type(exc), Class_info("java", "lang", "Throwable")), lst(excs...)), 
+                                                                                                                resolve-type(mtype))
 
-                 | (e, block(local-var(type, var-declarator(name, init)), rest...)) = and(warn-type<=(typecheck(e, init), type), typecheck(Scope(name, type, e), block(rest...)))
-                 | (e, block(local-var(type, var-declarator(name)), rest...)) = typecheck(Scope(name, type, e), block(rest...))
+                 | (e, constructor (modifiers, name, params, block(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), void-type())
+
+                 | (e, block(local-var(type), rest...)) = typecheck(e, block(rest...))
+                 | (e, block(local-var(type, var-declarator(name, init), declarators...), rest...)) = and(warn-type<=(typecheck(Scope(name, resolve-type(type), e), init), resolve-type(type), init), typecheck(Scope(name, resolve-type(type), e), block(local-var(type, declarators...), rest...))) ; TODO: let
+                 | (e, block(local-var(type, var-declarator(name), declarators...), rest...)) = typecheck(Scope(name, resolve-type(type), e), block(local-var(type, declarators...), rest...))
                  | (e, block(stmt, rest...)) = and(typecheck(e, stmt), typecheck(e, block(rest...)))
-                 | (e, block(rest...)) = void()
+                 | (e, block(rest...)) = void-type()
 
+                 | (e, method-invocation (name, arguments(elems...))) = method-invocation (kw-this(), name, arguments(elems...))
                  | (e, method-invocation (class, name, arguments(elems...))) = 
                          lookup(Method(typecheck(e, class), name, map(function (el) = typecheck(e, el), lst(elems...))))
                  | (e, field-access (type_expr, field)) = lookup(Field(type_expr, field))
-                 | (e, type-name (package, name)) = lookup(Type(package, name))
-                 | (e, type-name (name)) = lookup(Type(name))
 
-                 | (e, eq-expr (expr1, expr2)) = and(type-union(typecheck(e, expr1), typecheck(e, expr2)), bool())
-                 | (e, lt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
-                 | (e, gt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
-                 | (e, lte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
-                 | (e, gte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float()), bool())
-                 | (e, instanceof-expr(expr1, expr2)) = and(type<=(typecheck(e, expr1), typecheck(e, expr2)), bool())
+                 | (e, eq-expr (expr1, expr2)) = and(type-union(typecheck(e, expr1), typecheck(e, expr2)), bool-type())
+                 | (e, lt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float-type()), bool-type())
+                 | (e, gt-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float-type()), bool-type())
+                 | (e, lte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float-type()), bool-type())
+                 | (e, gte-expr(expr1, expr2)) = and(type<=(type-union(typecheck(e, expr1), typecheck(e, expr2)), float-type()), bool-type())
+                 | (e, instanceof-expr(expr1, expr2)) = and(type<=(typecheck(e, expr1), typecheck(e, expr2)), bool-type())
 
                  | (e, add-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
                  | (e, sub-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
@@ -579,55 +584,84 @@ function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = 
                  | (e, lsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
                  | (e, rsh-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
                  | (e, rot-assign-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
-                 | (e, assign-expr (left, right)) = and(warn-type<=(typecheck(e, left), typecheck(e, right)), typecheck(e, left))
+                 | (e, assign-expr (left, right)) = and(warn-type<=(typecheck(e, right), typecheck(e, left), right), typecheck(e, left))
 
-                 | (e, prefix-inc(expression-name(name))) = and(type<=(typecheck(e, expression-name(name)), int()), typecheck(e, expression-name(name)))  ; TODO: let
+                 | (e, add-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, sub-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, div-expr(left, right)) = type-union(typecheck(e, left), typecheck(e, right))
+                 | (e, neg-expr(expr)) = typecheck(e, expr)
 
-                 | (e, cast (type, expr))= and(type==(type, typecheck(e, expr)), typecheck(e, expr))
-                 | (e, new (type-name, arguments(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), typecheck(e, type-name))
-                 | (e, return (val)) = and(type<=(typecheck(e, val), typecheck(e, expression-name (Method()))), typecheck(e, val))   ; TODO: let
-                 | (e, return()) = and(type<=(void(), typecheck(e, expression-name (Method()))), void())
-                 | (e, label (name, block)) = typecheck(Scope(Label(name), void(), e), block)
-                 | (e, break (lbl)) = typecheck(e, expression-name(Label(lbl)))
-                 | (e, break ()) = void()
-                 | (e, continue (lbl)) = typecheck(e, expression-name(Label(lbl)))
-                 | (e, continue ()) = void()
-                 | (e, throw (expr)) = and(type<=(typecheck(e, expr), Class_info("java", "lang", "Throwable")), void())
+                 | (e, prefix-inc(expression-name(name))) = and(type<=(typecheck(e, expression-name(name)), int-type()), typecheck(e, expression-name(name)))  ; TODO: let
+                 | (e, postfix-inc(expression-name(name))) = and(type<=(typecheck(e, expression-name(name)), int-type()), typecheck(e, expression-name(name)))  ; TODO: let
 
-                 | (e, for (for-init(local-var(type, var-declarator(name, val))), for-expr(expr), for-update, stmt)) = 
-                         and(type<=(typecheck(Scope(name, type, e), expr), bool()), typecheck(Scope(name, type, e), stmt))  ; TODO: let
-                 | (e, while (cond, stmt)) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
-                 | (e, do (stmt, while(cond))) = and(type<=(typecheck(e, cond), bool()), typecheck(e, stmt))
-                 | (e, switch (expr, switch-group (case (tag), block))) = and(type<=(typecheck(e, tag), typecheck(e, expr)), typecheck(e, block))
-                 | (e, if-kw (pred, stmt)) = and(type<=(typecheck(e, pred), bool()), typecheck(e, stmt), void())
-                 | (e, try (try-block, catch(param (type, name), catch-block))) = and(typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), void())
-                 | (e, try (try-block, finally (finally-block))) = and(typecheck(e, try-block), typecheck(e, finally-block), void())
-                 | (e, try (try-block, catches...)) = and(map(function (catch(param (type, name), catch-block)) = typecheck(e, try-block), typecheck(Scope(name, type, e), catch-block), lst(catches...)), void())
-                 | (e, synchronized(expr, block)) = and(typecheck(e, expr), typecheck(e, block))
+                 | (e, cast (type, expr))= and(or(type<=(typecheck(e, expr), resolve-type(type)), type<=(resolve-type(type), typecheck(e, expr))), resolve-type(type))  ; TODO: let, get rules correct for interfaces
+                 | (e, kw-new (type-name, arguments(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), resolve-type(type-name))
+                 | (e, kw-new (type-name, dims...)) = and(map(function (dim-expr(expr)) = type<=(typecheck(e, expr), byte-type()), lst(dims...)), array-type(resolve-type(type-name)))
+
+                 | (e, kw-return (val)) = and(type<=(typecheck(e, val), typecheck(e, expression-name (Method()))), typecheck(e, val))   ; TODO: let
+                 | (e, kw-return()) = and(type<=(void-type(), typecheck(e, expression-name (Method()))), void-type())
+                 | (e, label (name, block)) = typecheck(Scope(Label(name), void-type(), e), block)
+                 | (e, kw-break (lbl)) = typecheck(e, expression-name(Label(lbl)))
+                 | (e, kw-break ()) = void-type()
+                 | (e, kw-continue (lbl)) = typecheck(e, expression-name(Label(lbl)))
+                 | (e, kw-continue ()) = void-type()
+                 | (e, kw-throw (expr)) = and(warn-type<=(typecheck(e, expr), Class_info("java", "lang", "Throwable"), expr), void-type())
+
+                 | (e, kw-while (cond, stmt)) = and(type<=(typecheck(e, cond), bool-type()), typecheck(e, stmt))
+                 | (e, kw-do (stmt, kw-while(cond))) = and(type<=(typecheck(e, cond), bool-type()), typecheck(e, stmt))
+                 | (e, kw-switch (expr, switch-groups...)) = and(type<=(typecheck(e, expr), int-type()),
+                                                                 map(function (switch-group (kw-case (tag), block)) = and(type<=(typecheck(e, tag), int-type()), typecheck(e, block))
+                                                                            | (switch-group (kw-default(), block)) = typecheck(e, block), 
+                                                                     lst(switch-groups...)))
+                   
+                 | (e, kw-if (pred, stmt)) = typecheck(e, kw-if (pred, stmt, kw-else(empty-stmt())))
+                 | (e, kw-if (pred, then-stmt, kw-else(else-stmt))) = and(type<=(typecheck(e, pred), bool-type()), typecheck(e, then-stmt), typecheck(e, else-stmt), void-type())
+                 | (e, kw-try (try-block, catches...)) = and(typecheck(e, try-block),
+                                                             map(function (kw-catch(param (type, name), catch-block)) = and(type<=(resolve-type(type), Class_info("java", "lang", "Throwable")), 
+                                                                                                                            typecheck(Scope(name, resolve-type(type), e), catch-block))
+                                                                        | (kw-finally (finally-block)) = typecheck(e, finally-block),
+                                                                 lst(catches...)), void-type())
+                 | (e, kw-synchronized(expr, block)) = and(typecheck(e, expr), typecheck(e, block))
 
                  | (Scope(name, type, e), expression-name (name)) = type
+                 | (Scope(name, type, BottomScope()), expression-name(Label(lbl))) = seq(message("error", lbl, "undefined label: ", lbl), false())
                  | (Scope(This(), type, BottomScope()), expression-name(name)) = get-symbol(Field (type, name))
                  | (Scope(name1, type, e), expression-name (name2)) = typecheck(e, expression-name (name2))
 
+                 | (Scope(This(), type, BottomScope()), kw-this()) = type
+                 | (Scope(name1, type, e), kw-this()) = typecheck(e, kw-this())
+
+                 | (e, ambiguous-name(class, name)) = lookup(Field(typecheck(e, class), name))
                  | (e, ambiguous-name(name)) = or(lookup(Type(name)), typecheck(e, expression-name(name)))
-                 | (e, expression-name(class, name)) = lookup(Field(lookup(class), name))
+                 | (e, expression-name(class, name)) = lookup(Field(typecheck(e, class), name))
 
                  | (e, array-type(inner)) = array-type(inner)
 
                  | (e, string(s)) = Class_info("java", "lang", "String")
-                 | (e, integer(i)) = byte()
-                 | (e, floating-point(f)) = float()
-                 | (e, char(c)) = char()
-                 | (e, int()) = int()
-                 | (e, array-init(vals...)) = array-type(foldl(function (t, val) = type-union(t, typecheck(e, val)), void(), lst(vals...)))
+                 | (e, integer(i)) = byte-type()
+                 | (e, floating-point(f)) = float-type()
+                 | (e, char(c)) = char-type()
+                 | (e, array-init()) = array-type()
+                 | (e, array-init(vals...)) = array-type(reduce(function (t1, t2) = type-union(t1, t2), map(function (val) = typecheck(e, val), lst(vals...))))
 
-                 | (e, true()) = bool()
-                 | (e, false()) = bool()
+                 | (e, kw-true()) = bool-type()
+                 | (e, kw-false()) = bool-type()
 
-                 | (e, null()) = void()
-                 | (e, empty-stmt()) = void()
+                 | (e, kw-null()) = null-type()
+                 | (e, empty-stmt()) = void-type()
 				 
-				 | (e, ambiguous-name(class, name)) = lookup(Field(lookup(class), name))
+function resolve-type (kw-int()) = int-type()
+                    | (kw-short()) = short-type()
+                    | (kw-byte()) = byte-type()
+                    | (kw-char()) = char-type()
+                    | (kw-void()) = void-type()
+                    | (kw-boolean()) = bool-type()
+                    | (array-type(type)) = array-type(resolve-type(type))
+                    | (type-name (package, name)) = lookup(Type(package, name))
+                    | (type-name (name)) = lookup(Type(name))
+                    
+
+
 				 
 ;function disambiguate (ambiguous-name(ambiguous-name("System"), "out")) = field-access(Class_info("java", "lang", "System"), "out")
 
@@ -641,100 +675,84 @@ function lookup (Type("System")) = Class_info("java", "lang", "System")
               | (Type("Error")) = Class_info("java", "lang", "Error")
               | (Type(package-name("java", "io"), "IOException")) = Class_info("java", "io", "IOException")
               | (Type(package-name("java", "io"), "Serializable")) = Class_info("java", "io", "Serializable")
-              | (Type(tname)) = Class_info(tname)  ; TODO:  add package name
+              | (Type("NullPointerException")) = Class_info("java", "lang", "NullPointerException")
+              | (Type("ArithmeticException")) = Class_info("java", "lang", "ArithmeticException")
+              | (Type("ClassCastException")) = Class_info("java", "lang", "ClassCastException")
+              | (Type("Integer")) = Class_info("java", "lang", "Integer")
+
+              | (Field (array-type(type), "length")) = int-type()
 
               | (Field (Class_info("java", "lang", "System"), "out")) = Class_info("java", "io", "PrintStream")
-              | (Method(Class_info("java", "io", "PrintStream"), "println", lst(Class_info("java", "lang", "String")))) = void()
-              | (Method(Class_info("java", "io", "PrintStream"), "println", lst())) = void()
-              | (Field(array-type (type-name("String")), "length")) = int()
+              | (Method(Class_info("java", "io", "PrintStream"), "println", lst(Class_info("java", "lang", "String")))) = void-type()
+              | (Method(Class_info("java", "io", "PrintStream"), "println", lst())) = void-type()
+              | (Field(array-type (type-name("String")), "length")) = int-type()
               | (Field(type-name(t), "System")) = false()
               | (Field(type, Label(lab))) = false()
 
               | (Type("args")) = false()
-              | (Field("val")) = int()
+              | (Field("val")) = int-type()
               | (Field("str")) = Class_info("java", "lang", "String")
               | (Field("i")) = Class_info("java", "lang", "Object")
-;              | (Field(type-name("T842is2"), "x")) = int()
-;              | (Field(type-name("T842is2"), "y")) = int()
+;              | (Field(type-name("T842is2"), "x")) = int-type()
+;              | (Field(type-name("T842is2"), "y")) = int-type()
+              | (Type(package-name("test"), "T147same1")) = false()  ; should give error in test file
+              | (Method(Class_info("java", "lang", "System"), "exit", lst(byte-type))) = void-type()
+              | (Field (Class_info("java", "lang", "Integer"), "MAX_VALUE")) = int-type()
 
-function warn-type<= (t1, t2) = if_ (type<= (t1, t2), true(), seq(message(t1, "error: incompatible types"), false()))
+function warn-type<= (t1, t2, expr) = true() if type<= (t1, t2) else seq(message("error", expr, "incompatible types"), false())
 
 ; type<= (t1, t2) : an expression of type t1 can be assigned to a variable of type t2
 function type<= (t, t) = true()
+              | (null-type(), Class_info("java", "lang", "Object")) = true()
+              | (null-type(), array-type(a)) = true()
+              | (null-type(), type) = type<=(null-type(), type-parent(type))
               | (array-type(t1), array-type(t2)) = type<=(t1, t2)
+              | (array-type(), array-type(t)) = true()
               | (t, array-type(a)) = false()
               | (array-type(a), t) = false()
-              | (void(), t) = false()
-              | (double(), Class_info(names...)) = false()
+              | (void-type(), t) = false()
+              | (double-type(), Class_info(names...)) = false()
+              | (double-type(), type-name("Object")) = false()
               | (Class_info("java", "lang", "Object"), t) = false()
+              | (t, bool-type()) = false()
+              | (bool-type(), t) = false()
+              | (double-type(), t) = false()
               | (t1, t2) = type<=(type-parent(t1), t2)
-              | (byte(), type-name("Object")) = false()
-              | (t, bool()) = false()
-              | (bool(), t) = false()
+
 
 ; type-parent (tc) = tp : tp is the parent of type tc
-function type-parent (float()) = double()
-                   | (long()) = float()
-                   | (int()) = long()
-                   | (char()) = int()
-                   | (short()) = int()
-                   | (byte()) = short()
-                   | (void()) = void()
+function type-parent (float-type()) = double-type()
+                   | (long-type()) = float-type()
+                   | (int-type()) = long-type()
+                   | (char-type()) = int-type()
+                   | (short-type()) = int-type()
+                   | (byte-type()) = short-type()
+                   | (void-type()) = void-type()
                    | (Class_info("java", "lang", "RuntimeException")) = Class_info("java", "lang", "Exception")
                    | (Class_info("java", "lang", "Exception")) = Class_info("java", "lang", "Throwable")
                    | (Class_info("java", "lang", "Error")) = Class_info("java", "lang", "Throwable")
                    | (Class_info("java", "lang", "Throwable")) = Class_info("java", "lang", "Object")
                    | (Class_info("java", "io", "IOException")) = Class_info("java", "lang", "Exception")
                    | (Class_info("java", "lang", "String")) = Class_info("java", "lang", "Object")
+                   | (Class_info("java", "io", "Serializable")) = Class_info("java", "lang", "Object")
+                   | (Class_info("java", "lang", "NullPointerException")) = Class_info("java", "lang", "RuntimeException")
+                   | (Class_info("java", "lang", "ClassNotFoundException")) = Class_info("java", "lang", "Exception")
+                   | (Class_info("java", "lang", "ArithmeticException")) = Class_info("java", "lang", "RuntimeException")
+                   | (Class_info("java", "lang", "ClassCastException")) = Class_info("java", "lang", "RuntimeException")
+                   | (Class_info("java", "lang", "Integer")) = Class_info("java", "lang", "Number")
+                   | (Class_info("java", "lang", "Number")) = Class_info("java", "lang", "Object")
 
 function type-union (t, t) = t
-                  | (void(), t) = t
-                  | (t, void()) = t
-                  | (short(), char()) = short()
-                  | (int(), byte()) = int()
+                  | (void-type(), t) = t
+                  | (t, void-type()) = t
+                  | (short-type(), char-type()) = int-type()
+                  | (int-type(), byte-type()) = int-type()
+                  | (byte-type(), int-type()) = int-type()
+                  | (array-type(t), null-type()) = array-type(t)
+
 
 function put-symbol (sym, val) = symtable-put(sym, val)
-function get-symbol (sym) = symtable-get(sym)
-function message(loc, strs...) = message_(loc, strs...)
+function get-symbol (sym) = symtable-get(sym, false())
 }}
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
-;[class : [modifiers : [public]] #"HelloWorld" [extends : [type-name : #"Object"]] 
-;  [body : [method : [modifiers : [public] [static]] [void] #"main" [formal-params : [array-type : [type-name : #"String"]] #"args"] 
-;    [block : [method-invocation : [ambiguous-name : [ambiguous-name : #"System"] #"out"] #"println" [arguments : [string : #"Hello, World"]]]]]]]
-;
-; -->
-;
-; [ClassFile : [Class_info : #"HelloWorld"] [Class_info : #"java" #"lang" #"Object"] [access_flags : [public]] [interfaces] 
-;     [fields]
-;     [methods : [method_info : [access_flags : [public]] #"<init>" [MethodDescriptor : [void]] 
-;         [attributes : [Code_attribute : 
-;             [return : [invokespecial : [Methodref_info : [Class_info : #"java" #"lang" #"Object"] #"<init>" [MethodDescriptor : [void]] [this]]]] 
-;     ]]]
-;		[method_info : [access_flags : [public] [static]] #"main" [MethodDescriptor : [void] [Array : [Class_info : #"java" #"lang" #"String"]]] 
-;         [attributes : [Code_attribute : 
-;             [invokevirtual : [Methodref_info : [Class_info : #"java" #"io" #"PrintStream"] "println" [MethodDescriptor : [void] [Class_info : #"java" #"lang" #"String"]]]
-;                 [getstatic : [Fieldref : [Class_info : #"java" #"lang" #"System"] #"out" [Class_info : #"java" #"io" #"PrintStream"]]] 
-;                 [string : #"Hello, World"]] 
-;     ]]]]
-;     [attributes]]
-;
-;
-;
-; Compiled from "HelloWorld.java"
-; public class HelloWorld extends java.lang.Object{
-; public HelloWorld();
-;   Code:
-;    0: aload_0
-;    1: invokespecial #1; //Method java/lang/Object."<init>":()V
-;    4: return
-; 
-; public static void main(java.lang.String[]);
-;   Code:
-;    0: getstatic #2; //Field java/lang/System.out:Ljava/io/PrintStream;
-;    3: ldc #3; //String Hello, World
-;    5: invokevirtual #4; //Method java/io/PrintStream.println:(Ljava/lang/String;)V
-;    8: return
-; 
-; }

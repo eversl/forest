@@ -45,21 +45,24 @@
 ;(pattern ($$ 'a1 'a2) (/ (+ 'a1 'a2) (+ (& 'a1) ($ 'a1 'a1 "expression not completed"))))
 (insert sexpr (@ "$$" (parens (+ (sym "$$") sexpr sexpr))))
 
-;(pattern (@: 'n ,r) (@ 'n (+ (kw 'n) ,r)))
+;(pattern (@: 'n ,r) (kw@ 'n (+ (kw 'n) ,r)))
 (insert sexpr (@ "@:" (parens (+ (sym "@:") sexpr sexprs))))
-;(pattern (@$ 'n ,r) (@ 'n ($ 'n (+ ,r))))
+;(pattern (@$ 'n ,r) (kw@ 'n ($ 'n (+ ,r))))
 (insert sexpr (@ "@$" (parens (+ (sym "@$") sexpr sexprs))))
-;(pattern (@$: 'n ,r) (@ 'n ($ (kw 'n) (+ ,r))))
+;(pattern (@$: 'n ,r) (kw@ 'n ($ (kw 'n) (+ ,r))))
 (insert sexpr (@ "@$:" (parens (+ (sym "@$:") sexpr sexprs))))
-;(pattern (@.: 'f 'n ,r) (@ 'n (+ 'f (kw 'n) ,r)))
+;(pattern (@.: 'f 'n ,r) (kw@ 'n (+ 'f (kw 'n) ,r)))
 (insert sexpr (@ "@.:" (parens (+ (sym "@.:") sexpr sexpr sexprs))))
-;(pattern (@.$: 'f 'n ,r) (@ 'n (+ 'f ($ (kw 'n) (+ ,r)))))
+;(pattern (@.$: 'f 'n ,r) (kw@ 'n (+ 'f ($ (kw 'n) (+ ,r)))))
 (insert sexpr (@ "@.$:" (parens (+ (sym "@.$:") sexpr sexpr sexprs))))
 
 ;(syntaxpattern (kw 'c) (tok (insert keyword (+ 'c (! letterordigit)))))
 (insert sexpr (@ "kw" (parens (+ (sym "kw") sexpr))))
 
+;(syntaxpattern (kw@ 'n '''r) (@ 'n '''r))
+(insert sexpr (@ "kw@" (parens (+ (sym "kw@") sexpr sexprs))))
+
 ;(syntaxpattern (oper 'c) (tok (+ 'c (! operatorchar))))
 (insert sexpr (@ "oper" (parens (+ (sym "oper") sexpr))))
 
-(insert sexpr (@ "term" (parens (+ (sym "term") sexpr sexprs))))
+

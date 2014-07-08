@@ -24,11 +24,12 @@
 
 (rule funcbody (seq (@ "defcase" (+ functionargs (tok "=") conditionalexpr)) (tok "|")))
 
-(rule functionargs (@ "functionargs" (parens (+ (* (+ conditionalexpr comma)) (? (/ listvariable conditionalexpr))))))
+;(rule functionargs (@ "functionargs" (parens (+ (* (+ functionalexpr comma)) (? (/ listvariable functionalexpr))))))
+ (rule functionargs (@ "functionargs" (parens (? (list (/ listvariable functionalexpr))))))
 
 (rule listvariable (@ "listvariable" (+ identifier (tok "..."))))
 
-(rule conditionalexpr (/ (@ "ifexpr" (+ functionalexpr (kw "if") conditionalexpr (kw "else") functionalexpr))
+(rule conditionalexpr (/ (@ "ifexpr" (+ conditionalexpr (kw "if") functionalexpr (kw "else") conditionalexpr))
                           functionalexpr))
 
 (insert functionalexpr (/ (@ "functionref" (+ identifier functionargs))

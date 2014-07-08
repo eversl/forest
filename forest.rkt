@@ -208,11 +208,12 @@
                                                      (let ([errstr (string-concatenate (map any->string strs))])
                                                        (eprintf "Error while pattern matching: ~a~nTraceback: ~n" errstr)
                                                        (raise (make-exn:fail:errorpattern errstr (current-continuation-marks))))]))))  
-                         (cons 'message_ (list (cons (mt "message_" (mt "var" "loc") (mt "varlist" "strs")) 
+                         (cons 'message (list (cons (mt "message" (mt "var" "kind") (mt "var" "loc") (mt "varlist" "strs")) 
                                                      (match-lambda*
-                                                       [(list read-lang lang trm (cons _ strs) (cons _ loc))
+                                                       [(list read-lang lang trm (cons _ strs) (cons _ loc) (cons _ kind))
                                                         (let ([errstr (string-concatenate (map any->string strs))])
-                                                          (eprintf (make-errormessage errstr loc))
+                                                          (eprintf "~a: ~a" kind (make-errormessage errstr loc))
+                                                          (when (string=? (any->string kind) "error") (set! *errors* #t))
                                                           (mt "null"))]))))  
                          (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 
                                                     (match-lambda*
@@ -283,17 +284,17 @@
                                                             (printf "symtable-put ~a: ~a~n" key val) 
                                                             (hash-set! *symtable* key val)
                                                             val]))))
-                         (cons 'symtable-get (list (cons (mt "symtable-get" (mt "var" "key")) 
+                         (cons 'symtable-get (list (cons (mt "symtable-get" (mt "var" "key") (mt "var" "default")) 
                                                          (match-lambda*
-                                                           [(list read-lang lang trm (cons _ key))
-                                                            (printf "symtable-get ~a~n" key)
-                                                            (let ([val (hash-ref *symtable* key)])
+                                                           [(list read-lang lang trm (cons _ default) (cons _ key))
+                                                            (printf "symtable-get ~a ~a~n" key default)
+                                                            (let ([val (hash-ref *symtable* key default)])
                                                               (printf "symtable-get ~a: ~a~n" key val)                                                   
                                                               val)]))))))
 
 (define (expand-term trm lang modify-lang)
   ; print traceback for error pattern
-  (with-handlers ([exn:fail:errorpattern? (lambda (exn) (unless (token-equal? (term-name trm) "error") (eprintf (make-errormessage "" trm))) 
+  (with-handlers ([exn:fail:errorpattern? (lambda (exn) (unless (token-equal? (term-name trm) "error") (eprintf "~a" (make-errormessage "" trm))) 
                                             (raise exn))])
     (cond [(or (token? trm) (string? trm)) trm]
           [(not (term? trm)) (raise-user-error 'expand-term "called with something other than a term or token: ~s" trm)]
@@ -659,8 +660,8 @@
            (let choice-loop ([args args])
              (if (null? args) (values #f null)
                  (let-values ([(new-pos taken) (parse (car args) pos path-ls)])
-                   (if new-pos (values new-pos taken) 
-                       #;(if (token-equal? (term-name exp) "/") (values new-pos taken)
+                   (if new-pos #;(values new-pos taken) 
+                       (if (token-equal? (term-name exp) "/") (values new-pos taken)
                              (let ([success-args (filter (lambda (arg) (let-values ([(new-pos taken) (parse arg pos path-ls)])
                                                                          new-pos)) (cdr args))])
                                (unless (null? success-args)
@@ -747,6 +748,8 @@
 
 (define *cache* #t)
 
+(define *errors* #f)
+
 (define (main argv)  
   (let ([infiles (command-line "forest" argv
                                (once-each
@@ -759,11 +762,11 @@
                                (args filenames ; expects names of files to as last command-line arguments
                                      filenames)) ; return list of filenames to compile
                  ])
-    (exit (if (andmap (lambda (infile)
+    (exit (if (and (andmap (lambda (infile)
                         (let ((modify-lang (make-lang '() '() '())))
                           (parse-file infile (lambda (read-lang terms) 
                                                (for-each (lambda (term) (printf "> ~a~n" (expand-term term read-lang modify-lang))) terms)))))
-                      infiles) 0 1))))
+                      infiles) (not *errors*)) 0 1))))
 
 ; interactive script
 (main (current-command-line-arguments))

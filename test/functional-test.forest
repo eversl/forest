@@ -6,7 +6,12 @@
 
 {{ functional             
 
-function map (fn, lst(    tl...)) = lst(tl...)
+;function map (fn, lst(hd, tl...)) = cons( `fn`(hd), map(fn, lst(tl...)))
+;           | (fn, lst(    tl...)) = lst(tl...)
+
+; function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = map(function (el) = typecheck(e, el), lst(elems...))
+
+function warn-type<= (t1, t2) = true() if type<= (t1, t2) else seq(message(t1, "error: incompatible types"), false())
 
 }}
 

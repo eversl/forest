@@ -1,0 +1,1298 @@
+
+Testing forest
+Working directory is /Users/leonevers/Dropbox/Coding/forest
+compile = /Users/leonevers/Dropbox/Coding/forest/javac  ...
+run     = /Users/leonevers/Dropbox/Coding/forest/java  ...
+leonevers/Dropbox/Coding/forest/test/jacks/tests/gcj
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/blocks-and-statements/labeled-statements
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/blocks-and-statements/try-statement
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/blocks-and-statements/unreachable-statements
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/classes/constructor-declarations/constructor-body/explicit-constructor-invocations
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/classes/field-declarations/initialization-of-fields
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/classes/method-declarations/method-body
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/interfaces/interface-members
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/lexical-structure/literals/character-literals
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/lexical-structure/unicode
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/jls/packages/import-declarations/type-import-on-demand-declaration
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jikes/non-jls/effective-java
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/arrays/array-initializers
+
+==== 10.6-type-2  expressions in array initializer must be
+        assignment compatible with array type  FAILED
+==== Contents of test case:
+
+    empty_main T106t2 {
+        int[] ia = { 1L };
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 10.6-type-2 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/binary-compatibility/form-of-binary
+
+==== 13.1-constructor-1  Constructors in a non-private non-static
+        nested class have an additional first parameter in the binary, for
+        the enclosing class  FAILED
+==== Contents of test case:
+
+    empty_class T131c1a {
+	class Inner {}
+    }
+    delete T131c1a.java
+    compile -classpath . [saveas T131c1b.java {
+class T131c1b {
+    Object o = new T131c1a().new Inner();
+}
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 13.1-constructor-1 FAILED
+
+
+==== 13.1-covariance-1  Class files may have more than one method
+        with the same parameter types but different return types. In
+        particular, legal .class files compiled with gj (generic java) or the
+        JSR14 beta compiler (the prequel to the expected JDK 1.5) allow
+        covariance in return types, and do so by compiling synthetic bridge
+        methods. Here, we check that the compiler is able to gracefully handle
+        covariance when loading a .class file, even though this is normally
+        a binary incompatible change.  FAILED
+==== Contents of test case:
+
+    compile [saveas T131co1a.java {
+class T131co1a {
+    T131co1b m() { return null; }
+}
+class T131co1b extends T131co1a {
+    T131co1b m() { return null; }
+}
+class T131co1c extends T131co1b {
+    { m(); }
+}
+    }]
+    delete T131co1a.java
+    compile -classpath . [saveas T131co1a.java {
+class T131co1a {
+    T131co1a m() { return null; } // change return type to a instead of b
+}
+// class T131co1b extends T131co1a {
+//     T131co1b m() { return null; } // now covariant!
+    // if this class were uncommented and compiled by gj, it would also have
+    // /*synthetic*/ T131co1a m() { return /*T131co1b*/m(); }
+// }
+class T131co1c extends T131co1b {
+    { m(); }
+}
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 13.1-covariance-1 FAILED
+
+
+==== 13.1-covariance-2  Class files may have more than one method
+        with the same parameter types but different return types. In
+        particular, legal .class files compiled with gj (generic java) or the
+        JSR14 beta compiler (the prequel to the expected JDK 1.5) allow
+        covariance in return types, and do so by compiling synthetic bridge
+        methods. Here, we check that the compiler is able to gracefully handle
+        covariance when loading a .class file, even though this is normally
+        a binary incompatible change.  FAILED
+==== Contents of test case:
+
+    compile [saveas T131co2a.java {
+class T131co2a {
+    T131co2b[] m() { return null; }
+}
+class T131co2b extends T131co2a {
+    T131co2b[] m() { return null; }
+}
+class T131co2c extends T131co2b {
+    { m(); }
+}
+    }]
+    delete T131co2a.java
+    compile -classpath . [saveas T131co2a.java {
+class T131co2a {
+    T131co2a[] m() { return null; } // change return type to a[] instead of b[]
+}
+// class T131co2b extends T131co2a {
+//     T131co2b[] m() { return null; } // now covariant!
+    // if this class were uncommented and compiled by gj, it would also have
+    // /*synthetic*/ T131co2a[] m() { return /*T131co2b*/m(); }
+// }
+class T131co2c extends T131co2b {
+    { m(); }
+}
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 13.1-covariance-2 FAILED
+
+
+==== 13.1-covariance-3  Class files may have more than one method
+        with the same parameter types but different return types. In
+        particular, legal .class files compiled with gj (generic java) or the
+        JSR14 beta compiler (the prequel to the expected JDK 1.5) allow
+        covariance in return types, and do so by compiling synthetic bridge
+        methods. Here, we check that the compiler is able to gracefully handle
+        covariance when loading a .class file, even though this is normally
+        a binary incompatible change.  FAILED
+==== Contents of test case:
+
+    compile [saveas T131co3a.java {
+interface T131co3a {
+    T131co3b m();
+}
+interface T131co3b extends T131co3a {
+    T131co3b m();
+}
+abstract class T131co3c implements T131co3b {
+    { m(); }
+}
+    }]
+    delete T131co3a.java
+    compile -classpath . [saveas T131co3a.java {
+interface T131co3a {
+    T131co3a m(); // change return type to a instead of b
+}
+// interface T131co3b extends T131co3a {
+//     T131co3b m(); // now covariant!
+// }
+abstract class T131co3c implements T131co3b {
+    // if b were uncommented and compiled by gj, this class would also have
+    // /*synthetic*/ T131co3a m() { return /*T131co3b*/m(); }
+    // Note that calling a.m() may fail when this class is not compiled by
+    // gj, as the bridge method is missing; but that is a different problem.
+    { m(); }
+}
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 13.1-covariance-3 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/break-statement
+
+==== 14.14-plain-1  plain break must occur in a loop
+        statement or switch  FAILED
+==== Contents of test case:
+
+    empty_main T1414p1 {
+        break;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.14-plain-1 FAILED
+
+
+==== 14.14-plain-9  plain break must occur in a loop
+        statement or switch  FAILED
+==== Contents of test case:
+
+    empty_main T1414p9 {
+        a: break;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.14-plain-9 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/continue-statement
+
+==== 14.15-plain-1  continue must occur in a loop statement  FAILED
+==== Contents of test case:
+
+    empty_main T1415p1 {
+        continue;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-plain-1 FAILED
+
+
+==== 14.15-plain-8  continue must occur in a loop statement  FAILED
+==== Contents of test case:
+
+    empty_main T1415p8 {
+        switch (args.length) {
+            case 0: continue;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-plain-8 FAILED
+
+
+==== 14.15-label-1  A label targeted by continue
+        must have a loop as its statment  FAILED
+==== Contents of test case:
+
+    empty_main T1415l1 {
+        a: {
+            for (int i=0; i<10; ++i)
+                continue a;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-label-1 FAILED
+
+
+==== 14.15-label-2  A label targeted by continue
+        must have a loop as its statment  FAILED
+==== Contents of test case:
+
+    empty_main T1415l2 {
+        a: b: for (int i=0; i<10; ++i)
+            continue a;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-label-2 FAILED
+
+
+==== 14.15-label-4  continue must occur in a loop statement  FAILED
+==== Contents of test case:
+
+    empty_main T1415l4 {
+        a: continue a;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-label-4 FAILED
+
+
+==== 14.15-label-11  continue must occur in a loop statement  FAILED
+==== Contents of test case:
+
+    empty_main T1415l11 {
+        a: switch (args.length) {
+            case 0: continue a;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.15-label-11 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/if-statement
+
+==== 14.9-invalid-syntax-2  Expression must be of type boolean  FAILED
+==== Contents of test case:
+
+    empty_main T149is2 {
+        if (0)
+            ;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.9-invalid-syntax-2 FAILED
+
+
+==== 14.9-expression-evaluation-3 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee3 {
+        final boolean aconst = false;
+        boolean anonconst = true;
+
+        if (aconst == anonconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-3 FAILED
+
+
+==== 14.9-expression-evaluation-5 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee5 {
+        final byte aconst = 0;
+        byte anonconst = 1;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-5 FAILED
+
+
+==== 14.9-expression-evaluation-7 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee7 {
+        final short aconst = 0;
+        short anonconst = 1;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-7 FAILED
+
+
+==== 14.9-expression-evaluation-9 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee9 {
+        final char aconst = 0;
+        char anonconst = 1;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-9 FAILED
+
+
+==== 14.9-expression-evaluation-11 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee11 {
+        final int aconst = 0;
+        int anonconst = 1;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-11 FAILED
+
+
+==== 14.9-expression-evaluation-13 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee13 {
+        final long aconst = 0L;
+        long anonconst = 1L;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-13 FAILED
+
+
+==== 14.9-expression-evaluation-15 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee15 {
+        final float aconst = 0F;
+        float anonconst = 1F;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-15 FAILED
+
+
+==== 14.9-expression-evaluation-17 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee17 {
+        final double aconst = 0D;
+        double anonconst = 1D;
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-17 FAILED
+
+
+==== 14.9-expression-evaluation-19 non-constant expression FAILED
+==== Contents of test case:
+
+    empty_main T149ee19 {
+        final String aconst = "hi";
+        String anonconst = "there";
+
+        if (anonconst == aconst)
+            ;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.9-expression-evaluation-19 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/labeled-statements
+
+==== 14.7-shadow-1  Labels cannot shadow another label in the
+        same enclosing method, constructor, or initializer  FAILED
+==== Contents of test case:
+
+    empty_main T147shadow1 {
+        int i;
+        test: {
+            test: i = 1;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.7-shadow-1 FAILED
+
+
+==== 14.7-shadow-2  Labels cannot shadow another label in the
+        same enclosing method, constructor, or initializer  FAILED
+==== Contents of test case:
+
+    empty_main T147shadow2 {
+        int i;
+        test: test: i = 1;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.7-shadow-2 FAILED
+
+
+==== 14.7-shadow-3  Labels cannot shadow another label in the same
+        immediately enclosing method, constructor, or initializer. Here, the
+        two labels are in different immediately enclosing methods. FAILED
+==== Contents of test case:
+
+    empty_main T147shadow3 {
+        test: new Object() {
+            void foo() {
+                int i;
+                test: i = 1;
+            }
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.7-shadow-3 FAILED
+
+
+==== 14.7-same-2  Labels can share same identifier as class  FAILED
+==== Contents of test case:
+
+    empty_main T147same2 {
+        int i;
+        T147same2: i = 1;
+        new T147same2();
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.7-same-2 FAILED
+
+
+==== 14.7-same-3  Labels can share same identifier as interface  FAILED
+==== Contents of test case:
+
+    empty_main T147same3 {
+        int i;
+        Cloneable: i = 1;
+        new Cloneable() {};
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.7-same-3 FAILED
+
+
+==== 14.7-ident-6  Labels must be identifiers, including unicode  FAILED
+==== Contents of test case:
+
+    empty_main T147ident6 {
+        int i;
+        \u0061\u003a break a;
+        b: break \u0062;
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.7-ident-6 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/local-class-declarations
+
+==== 14.3-1  tests local class declarations in both static and
+        instance methods  FAILED
+==== Contents of test case:
+
+    empty_class TestLCD {
+        static Object static_method() {
+            abstract class Foo { }
+            return new Foo() { };
+        }
+        Object instance_method() {
+            abstract class Foo { }
+            return new Foo() { };
+        }
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-1 FAILED
+
+
+==== 14.3-scope-3  The scope of a local class continues to the end
+        of the current block  FAILED
+==== Contents of test case:
+
+    empty_main T143s3 {
+	class Local {
+	    { new Local() {}; }
+	}
+	new Local();
+	{
+	    new Local();
+	}
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-3 FAILED
+
+
+==== 14.3-scope-6  The scope of a local class continues to the end
+        of the current block, but may be shadowed in other classes  FAILED
+==== Contents of test case:
+
+    empty_main T143s6 {
+	class Local {}
+	{
+	    new Object() {
+		class Local {}
+	    };
+	}
+	new Object() {
+	    class Local {}
+	};
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-6 FAILED
+
+
+==== 14.3-scope-7  The scope of a local class continues to the end
+        of the current block  FAILED
+==== Contents of test case:
+
+    empty_main T143s7 {
+	{
+	    class Local {}
+	}
+	class Local {}
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-7 FAILED
+
+
+==== 14.3-scope-8  Example of scoping, minus failures  FAILED
+==== Contents of test case:
+
+    empty_class T143s8 {
+	class Cyclic {}
+	void foo() {
+	    new Cyclic(); // create a T143s8.Cyclic
+	    {
+		class Local{};
+		{
+		    class AnotherLocal {
+			void bar() {
+			    class Local {}; // ok
+			}
+		    }
+		}
+	    }
+	    class Local{}; // ok, not in scope of prior Local
+	}
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-8 FAILED
+
+
+==== 14.3-scope-9  The scope of a local class starts at its
+        declaration, not before  FAILED
+==== Contents of test case:
+
+    empty_class T143s9 {
+	class Local {
+	    static final int i = 1;
+	}
+	void m(int j) {
+	    switch (j) {
+		case 0:
+		case (1 == Local.i ? 1 : 0):
+	    }
+	    class Local {
+		static final int i = 2;
+	    }
+	    switch (j) {
+		case 0:
+		case (2 == Local.i ? 1 : 0):
+	    }
+	}
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-9 FAILED
+
+
+==== 14.3-scope-11  While not well-specified, the scope of a local
+        class in a switch statement is the immediately enclosing switch
+        block statement (and not the entire switch)  FAILED
+==== Contents of test case:
+
+    empty_class T143s11 {
+	void m(int i) {
+	    switch (i) {
+		case 0:
+		class Local {}
+		break;
+		case 1:
+		class Local {}
+	    }
+	}
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.3-scope-11 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/local-variable-declaration-statements/scope
+
+==== 14.4.2-invalid-scope-1  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_main T1442is1 {
+        int i;
+        int i;
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-1 FAILED
+
+
+==== 14.4.2-invalid-scope-2  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_main T1442is2 {
+        int i;
+        for (int i; ; );
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-2 FAILED
+
+
+==== 14.4.2-invalid-scope-3  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_main T1442is3 {
+        int i;
+        try {
+            throw new Exception();
+        } catch (Exception i) {
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-3 FAILED
+
+
+==== 14.4.2-invalid-scope-4  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_class T1442is4 {
+        void foo(int i) {
+            int i;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-4 FAILED
+
+
+==== 14.4.2-invalid-scope-5  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_main T1442is5 {
+        for (int i; ; ) {
+            int i;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-5 FAILED
+
+
+==== 14.4.2-invalid-scope-6  A local variable cannot be redeclared  FAILED
+==== Contents of test case:
+
+    empty_main T1442is6 {
+        try {
+            throw new Exception();
+        } catch (Exception i) {
+            int i;
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.4.2-invalid-scope-6 FAILED
+
+
+==== 14.4.2-shadow-4  A local variable may be shadowed by a member  FAILED
+==== Contents of test case:
+
+    empty_main T1442s4 {
+        Object i;
+        new Object() {
+            int i;
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.4.2-shadow-4 FAILED
+
+
+==== 14.4.2-shadow-5  A local variable may be shadowed by a local  FAILED
+==== Contents of test case:
+
+    empty_main T1442s5 {
+        final Object i = null;
+        new Object() {
+            {
+                Object o = i;
+                int i;
+                i = 1;
+            }
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.4.2-shadow-5 FAILED
+
+
+==== 14.4.2-shadow-6  A local variable may be shadowed by a local  FAILED
+==== Contents of test case:
+
+    empty_main T1442s6 {
+        final Object i = null;
+        new Object() {
+            {
+                Object o = i;
+                for (int i = 1; i < 1; );
+                o = i;
+            }
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.4.2-shadow-6 FAILED
+
+
+==== 14.4.2-shadow-7  A local variable may be shadowed by a local  FAILED
+==== Contents of test case:
+
+    empty_main T1442s7 {
+        final int i = 1;
+        new Object() {
+            {
+                try {
+                    int j = i;
+                    throw new Exception();
+                } catch (Exception i) {
+                }
+            }
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.4.2-shadow-7 FAILED
+
+
+==== 14.4.2-shadow-8  A local variable may be shadowed by a
+        parameter  FAILED
+==== Contents of test case:
+
+    empty_main T1442s8 {
+        final Object i = null;
+        new Object() {
+            Object o = i;
+            void foo(int i) {
+                i = 1;
+            }
+        };
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.4.2-shadow-8 FAILED
+
+
+==== 14.4.2-shadow-9  A local variable may be shadowed by an inherited
+        member  FAILED
+==== Contents of test case:
+
+    ok_pass_or_warn [empty_class T1442s9 {
+        void foo(final byte b) {
+            class One {
+                final int i = 1;
+            }
+            Object i;
+            class Two extends One {
+                {
+                    switch (b) {
+                        case 0:
+                        case (i == 1) ? 1 : 0:
+                    }
+                }
+            }
+        }
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+OK
+==== 14.4.2-shadow-9 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/switch-statement
+
+==== 14.10-invalid-type-1  Expression type must be char, byte, short, or int  FAILED
+==== Contents of test case:
+
+    switch_labels T1410it1 boolean
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-invalid-type-1 FAILED
+
+
+==== 14.10-invalid-type-5  Expression type must be char, byte, short, or int  FAILED
+==== Contents of test case:
+
+    switch_labels T1410it5 Object
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-invalid-type-5 FAILED
+
+
+==== 14.10-invalid-type-6  Expression type must be char, byte, short, or int  FAILED
+==== Contents of test case:
+
+    switch_labels T1410it6 String
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-invalid-type-6 FAILED
+
+
+==== 14.10-switchlabel-2  case label must have a ConstantExpression,
+        i++ is not a constant expression as defined by 15.28 FAILED
+==== Contents of test case:
+
+    switch_labels T1410sl2 int {case (i++):}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-switchlabel-2 FAILED
+
+
+==== 14.10-assignable-2  ConstantExpression must be assignable to Expression  FAILED
+==== Contents of test case:
+
+    switch_labels T1410a2 int {case 0L:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-assignable-2 FAILED
+
+
+==== 14.10-assignable-3  ConstantExpression must be assignable to Expression  FAILED
+==== Contents of test case:
+
+    switch_labels T1410a3 int {case 0.0D:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-assignable-3 FAILED
+
+
+==== 14.10-assignable-4  ConstantExpression must be assignable to Expression  FAILED
+==== Contents of test case:
+
+    switch_labels T1410a4 int {case true:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-assignable-4 FAILED
+
+
+==== 14.10-assignable-5  ConstantExpression must be assignable to Expression  FAILED
+==== Contents of test case:
+
+    switch_labels T1410a5 byte {case 128:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-assignable-5 FAILED
+
+
+==== 14.10-duplicate-1  No two case statements may have the same
+        ConstantExpression value  FAILED
+==== Contents of test case:
+
+    switch_labels T1410d1 int {case 0: case 1: case 0:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-duplicate-1 FAILED
+
+
+==== 14.10-duplicate-2  No two case statements may have the same
+        ConstantExpression value  FAILED
+==== Contents of test case:
+
+    switch_labels T1410d2 int {case 0: case 1: case (2-2):}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-duplicate-2 FAILED
+
+
+==== 14.10-duplicate-4  At most 1 default statement can be associated
+        with the same switch statement  FAILED
+==== Contents of test case:
+
+    switch_labels T1410d4 int {default: case 0: default:}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-duplicate-4 FAILED
+
+
+==== 14.10-abrupt-completion-2  continue is not a valid abrupt completion  FAILED
+==== Contents of test case:
+
+    switch_labels T1410ac2 int {case 0:
+                                  break;
+                                case 1:
+                                  continue;}
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-abrupt-completion-2 FAILED
+
+
+==== 14.10-example-1  This example causes an assertion in Jikes  FAILED
+==== Contents of test case:
+
+    compile -g [saveas T1410e1.java {
+class T1410e1 {
+    void foo() {
+        int i;
+        switch (i = 1) {
+            case 1:
+        }
+    }
+}
+    }]
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.10-example-1 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/synchronized-statement
+
+==== 14.18-expression-3  The type of the expression must be a
+        reference  FAILED
+==== Contents of test case:
+
+    empty_main T1418e3 {
+        synchronized (1) {}
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.18-expression-3 FAILED
+
+
+==== 14.18-expression-4  The type of the expression must be a
+        reference  FAILED
+==== Contents of test case:
+
+    empty_main T1418e4 {
+        synchronized (null) {}
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.18-expression-4 FAILED
+
+
+==== 14.18-expression-5  The type of the expression must be a
+        reference  FAILED
+==== Contents of test case:
+
+    empty_main T1418e5 {
+        synchronized ('a') {}
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.18-expression-5 FAILED
+
+
+==== 14.18-expression-6  The type of the expression must be a
+        reference  FAILED
+==== Contents of test case:
+
+    empty_main T1418e6 {
+        synchronized (System.out.println()) {}
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.18-expression-6 FAILED
+
+
+==== 14.18-lock-3  A single thread may lock the same object
+        multiple times (in a synchronized static method, <name>.class is
+        locked) FAILED
+==== Contents of test case:
+
+    empty_class T1418l3 {
+        static synchronized void foo() {
+            synchronized (T1418l3.class) {}
+        }
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.18-lock-3 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/throw-statement
+
+==== 14.17-null-3  JavaSpecReport 879: null is unchecked (since
+        throwing null equates to throwing NullPointerException)  FAILED
+==== Contents of test case:
+
+    empty_class T1417n3 {
+        void m() {
+            new Object() {{ if (true) throw null; }};
+        }
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.17-null-3 FAILED
+
+
+==== 14.17-null-4  JavaSpecReport 879: null is unchecked (since
+        throwing null equates to throwing NullPointerException)  FAILED
+==== Contents of test case:
+
+    empty_class T1417n4 {
+        void m() throws Throwable {
+            new Object() {{ if (true) throw null; }};
+        }
+    }
+
+---- Result was:
+FAIL
+---- Result should have been:
+PASS
+==== 14.17-null-4 FAILED
+
+
+==== 14.17-checked-2  Throw statements must be unchecked, caught,
+        or declared  FAILED
+==== Contents of test case:
+
+    empty_class t1417c2 {
+        void m() {
+            throw new Exception(); // checked, uncaught and undeclared
+        }
+    }
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.17-checked-2 FAILED
+
+leonevers/Dropbox/Coding/forest/test/jacks/tests/jls/blocks-and-statements/try-statement
