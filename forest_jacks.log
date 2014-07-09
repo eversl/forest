@@ -1005,6 +1005,30 @@ FAIL
 ==== 14.10-invalid-type-1 FAILED
 
 
+==== 14.10-invalid-type-2  Expression type must be char, byte, short, or int  FAILED
+==== Contents of test case:
+
+    switch_labels T1410it2 float
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-invalid-type-2 FAILED
+
+
+==== 14.10-invalid-type-3  Expression type must be char, byte, short, or int  FAILED
+==== Contents of test case:
+
+    switch_labels T1410it3 double
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 14.10-invalid-type-3 FAILED
+
+
 ==== 14.10-invalid-type-5  Expression type must be char, byte, short, or int  FAILED
 ==== Contents of test case:
 
@@ -6113,6 +6137,28 @@ PASS
 ---- Result should have been:
 FAIL
 ==== 8.1.4-abstract-2 FAILED
+
+
+==== 8.1.4-conflict-1  Multiple superinterfaces must not conflict  FAILED
+==== Contents of test case:
+
+    compile [saveas T814c1.java {
+interface Fish {
+    int getNumberOfScales();
+}
+interface StringBass {
+    double getNumberOfScales();
+}
+class T814c1 implements Fish, StringBass {
+    public double getNumberOfScales() { return 91; }
+}
+}]
+
+---- Result was:
+PASS
+---- Result should have been:
+FAIL
+==== 8.1.4-conflict-1 FAILED
 
 
 ==== 8.1.4-conflict-2  Multiple superinterfaces must not conflict  FAILED
@@ -39786,7 +39832,7 @@ leonevers/Dropbox/Coding/forest/test/jacks/tests/runtime/jls/lexical-structure/l
 leonevers/Dropbox/Coding/forest/test/jacks/tests/runtime/jls/lexical-structure/literals/string-literals
 leonevers/Dropbox/Coding/forest/test/jacks/tests/runtime/jvms/class-file-format/limitations
 leonevers/Dropbox/Coding/forest/test/jacks/tests/runtime/non-jls/assert
-forest:	Total	5011	Passed	2365	Skipped	422	Failed	2224
+forest:	Total	5011	Passed	2362	Skipped	422	Failed	2227
 Number of tests skipped for each constraint:
 	121	assert
 	2	assert && runtime

@@ -211,8 +211,8 @@
                          (cons 'message (list (cons (mt "message" (mt "var" "kind") (mt "var" "loc") (mt "varlist" "strs")) 
                                                      (match-lambda*
                                                        [(list read-lang lang trm (cons _ strs) (cons _ loc) (cons _ kind))
-                                                        (let ([errstr (string-concatenate (map any->string strs))])
-                                                          (eprintf "~a: ~a" kind (make-errormessage errstr loc))
+                                                        (let ([errstr (string-concatenate (cons (any->string kind)(map any->string strs)))])
+                                                          (eprintf "~a" kind (make-errormessage errstr loc))
                                                           (when (string=? (any->string kind) "error") (set! *errors* #t))
                                                           (mt "null"))]))))  
                          (cons 'pattern (list (cons (mt "pattern" (mt "var" "pat") (mt "var" "repl")) 

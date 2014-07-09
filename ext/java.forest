@@ -564,6 +564,9 @@ function typecheck (e, classdef(modifiers, clsname, extends, body(elems...))) = 
                  | (e, method-invocation (name, arguments(elems...))) = method-invocation (kw-this(), name, arguments(elems...))
                  | (e, method-invocation (class, name, arguments(elems...))) = 
                          lookup(Method(typecheck(e, class), name, map(function (el) = typecheck(e, el), lst(elems...))))
+
+                 | (e, kw-super (arguments(elems...))) = and(map(function (el) = typecheck(e, el), lst(elems...)), void-type())
+
                  | (e, field-access (type_expr, field)) = lookup(Field(type_expr, field))
 
                  | (e, eq-expr (expr1, expr2)) = and(type-union(typecheck(e, expr1), typecheck(e, expr2)), bool-type())
@@ -654,6 +657,8 @@ function resolve-type (kw-int()) = int-type()
                     | (kw-short()) = short-type()
                     | (kw-byte()) = byte-type()
                     | (kw-char()) = char-type()
+                    | (kw-float()) = float-type()
+                    | (kw-double()) = double-type()
                     | (kw-void()) = void-type()
                     | (kw-boolean()) = bool-type()
                     | (array-type(type)) = array-type(resolve-type(type))
